@@ -1,0 +1,73 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1,IE=edge" />
+    <title>Inline tiles test</title>
+    <script type="text/javascript" src="../../x3dom-include.js?full"></script>
+    <style>
+        label {margin: 5px;}
+        select {
+            padding: 5px;
+            border-width: thick;
+            borderr-radius: 5px;
+        }
+        option {
+            font-style: italic;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <X3D xmlns="http://www.web3d.org/specifications/x3d-namespace" showStat="true" showLog="false" width="800px" height="600px">
+        <Scene>
+            <!-- <NavigationInfo headlight="true"></NavigationInfo> -->
+            <DirectionalLight ambientIntensity="0.1"></DirectionalLight>
+            <Background skyColor='"0 0 0.2"'></Background>
+            <GeoViewpoint headlight="true" centerOfRotation="40.041665 -75.61785 0" position="40.029 -75.6148 20">
+                <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0">
+                </GeoOrigin>
+            </GeoViewpoint>
+            <Shape>
+                <Appearance>
+                    <Material diffuseColor='0.4 1.0 0.0'></Material>
+                    <ImageTexture url='"./basemap.jpg" "https://github.com/user-attachments/assets/cdea43dd-8128-4b5e-ad24-a97317194d63"'>
+                    </ImageTexture>
+                </Appearance>
+                <GeoElevationGrid ccw='true' colorPerVertex='true' creaseAngle='0.0' 
+                    geoGridOrigin='40.029665 -75.644785 0' 
+                    geoSystem='"GD" "WE"' 
+                    height='0 0 0 0' 
+                    solid='false' 
+                    xDimension='2' xSpacing='0.063852' 
+                    zDimension='2' zSpacing='0.025897'
+                    yScale='1'>
+                    <GeoOrigin USE="GO"></GeoOrigin>
+                </GeoElevationGrid>
+            </Shape>
+            <GeoTransform globalGeoOrigin="true">
+                <GeoOrigin USE="GO"></GeoOrigin>
+                <Inline onload='handleLoad(event)' id="inline" nameSpaceName="tiles" url="glbContentInline.x3d" ></Inline>
+            </GeoTransform>
+        </Scene>
+    </X3D>
+    <label _style='margin: 5px;' for="x3d-select">Choose an example:</label>
+    <select _style='padding: 5px;
+            border-width: thick;
+            _border-radius: 5px;'
+            id="x3d-select" onchange='handleChange(event)'>
+        <option>glbContentInline</option>
+        <option value="none" selected>--Please choose a x3d scene--</option>
+    </select>
+</body>
+<script>
+    const inline = document.querySelector('#Inline');
+    const ext = '.x3d';
+    function handleChange(event) {
+        document.fonts.clear();
+        inline.setAttribute('url', event.target.options[event.target.selectedIndex].value + ext);
+    }
+    function handleLoad(event) {
+        setTimeout(()=>{document.querySelector('X3D').runtime.showAll('negZ');}, 3000);
+    }
+</script>
+</html>
