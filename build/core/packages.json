@@ -319,6 +319,13 @@
         [
             "glTF/draco-1.5.5.js"
         ],
+        "src/util/loaders.gl/":
+        [
+            "setup.js",
+            "3d-tiles@4.3.4.min.js",
+            "tiles@4.3.4.min.js",
+            "core@4.3.4.min.js"
+        ],
         "src/nodes/Geospatial/":
         [
             "GeoCoordinate.js",
