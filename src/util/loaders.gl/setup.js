@@ -4,4 +4,5 @@
 exports = {};
 // establish an x3dom object as name space
 x3dom.loaders = {};
+x3dom.deck = {};
 // the npm libraries are amended by a line to save the libraries into the name space

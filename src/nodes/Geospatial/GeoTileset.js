@@ -77,6 +77,9 @@ x3dom.registerNodeType(
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
+            this._Tileset3D = x3dom.loaders.tiles.Tileset3D;
+            this._Viewport = x3dom.deck.core.Viewport;
+            this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;x3dom.deck.core.WebMercatorViewport
         },
         {
             _collectDrawableObjects : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
@@ -248,12 +251,37 @@ x3dom.registerNodeType(
                 //this._needReRender = true;
                 const tilesetJsonPromise = this._load(
                     this._vf.rootUrl[0], this._Tiles3DLoader, {'3d-tiles': {isTileset: true}});
-
+                var that = this;
                 tilesetJsonPromise.then( 
                     function fullfilled ( tilesetJson )
                     {
-                        console.log( tilesetJson )    
-                    });
+                        console.log( tilesetJson );
+                        return tilesetJson   
+                    },
+                    function rejected ( reason )
+                    {
+                        x3dom.debug.logInfo ( ' Tileset rejected: ' + reason );
+                    }
+                ).then(
+                    function tilesetLoaded ( tileset )
+                    {
+                        const tileset3d = new that._Tileset3D(tileset, {
+                            throttleRequests: false,
+                            onTileLoad: ( tile ) => console.log( tile )
+                        });
+                        return tileset3d
+                    },
+                    function rejected ( reason )
+                    {
+                        x3dom.debug.logInfo ( ' Never here: ' + reason );
+                    }
+                ).then(
+                    function tileset3dready ( tileset3d )
+                    {
+                        let viewport = new that._WebMercatorViewport();
+                        tileset3d.selectTiles ( viewport );
+                    }
+                );
 
                 //only rootNodes are ever shapes; childUrls have their own rootNodes
                 //append rootnode field with inline rooturl if empty
