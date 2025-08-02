@@ -278,7 +278,18 @@ x3dom.registerNodeType(
                 ).then(
                     function tileset3dready ( tileset3d )
                     {
-                        let viewport = new that._WebMercatorViewport();
+                        let rt = that._nameSpace.doc._x3dElem.runtime;
+                        const viewportOpts = {
+                            width: rt.getWidth(),
+                            height: rt.getHeight(),
+                            latitude: 40+0.2/60,
+                            longitude: -75-36/60,
+                            pitch: 2, // from vertical
+                            bearing: 10, // from N ccw
+                            zoom: 1
+                            //projectionMatrix: rt.projectionMatrix().toGL()
+                        }
+                        let viewport = new that._WebMercatorViewport( viewportOpts );
                         tileset3d.selectTiles ( viewport );
                     }
                 );
