@@ -313,6 +313,7 @@
             "TimeTrigger.js"
         ]
     },
+    "_comment": "loaders.gl files need to be in exact order:"
     "FULL":
     {
         "src/util/":
@@ -322,10 +323,10 @@
         "src/util/loaders.gl/":
         [
             "setup.js",
-            "3d-tiles@4.3.4.min.js",
-            "tiles@4.3.4.min.js",
+            "deckgl.core@9.1.14.dev.js",
             "core@4.3.4.min.js",
-            "deckgl.core@9.1.14.min.js"
+            "3d-tiles@4.3.4.min.js",
+            "tiles@4.3.4.dev.js"
         ],
         "src/nodes/Geospatial/":
         [

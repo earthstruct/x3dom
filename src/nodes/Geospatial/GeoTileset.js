@@ -286,11 +286,15 @@ x3dom.registerNodeType(
                             longitude: -75-36/60,
                             pitch: 2, // from vertical
                             bearing: 10, // from N ccw
-                            zoom: 1
+                            zoom: 1,
+                            nearZ: 0.59679,
+                            farZ: 5967.85292
                             //projectionMatrix: rt.projectionMatrix().toGL()
                         }
                         let viewport = new that._WebMercatorViewport( viewportOpts );
-                        tileset3d.selectTiles ( viewport );
+                        tileset3d.update ( viewport );
+                        console.log ( tileset3d );
+                        //return tileset3d;
                     }
                 );
 
