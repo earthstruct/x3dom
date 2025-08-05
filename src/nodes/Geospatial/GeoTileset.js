@@ -12,7 +12,7 @@
 x3dom.registerNodeType(
     "GeoTileset",
     "Geospatial",
-    defineClass( x3dom.nodeTypes.X3DBoundedObject,
+    defineClass( x3dom.nodeTypes.X3DGroupingNode,
 
         /**
          * Constructor for GeoTileset
@@ -68,12 +68,10 @@ x3dom.registerNodeType(
              * @field x3d
              * @instance
              */
-            //this.addField_SFNode( "geoTransform", x3dom.nodeTypes.GeoTransform );
+            
+            this._ctx = ctx;
 
-            this.geoTransform = new x3dom.nodeTypes.GeoTransform();
-            this.geoTransform._cf.geoOrigin = this._cf.geoOrigin;
-            this.geoTransform._vf.globalGeoOrigin = true;
-            this.geoTransform._nameSpace = this._nameSpace;
+            this._loaded = new Map();
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
@@ -256,45 +254,32 @@ x3dom.registerNodeType(
                     function fullfilled ( tilesetJson )
                     {
                         console.log( tilesetJson );
-                        return tilesetJson   
-                    },
-                    function rejected ( reason )
-                    {
-                        x3dom.debug.logInfo ( ' Tileset rejected: ' + reason );
-                    }
-                ).then(
-                    function tilesetLoaded ( tileset )
-                    {
-                        const tileset3d = new that._Tileset3D(tileset, {
-                            throttleRequests: false,
-                            onTileLoad: ( tile ) => console.log( tile )
-                        });
-                        return tileset3d
-                    },
-                    function rejected ( reason )
-                    {
-                        x3dom.debug.logInfo ( ' Never here: ' + reason );
-                    }
-                ).then(
-                    function tileset3dready ( tileset3d )
-                    {
+                        const tileset3d = new that._Tileset3D( tilesetJson,
+                            {
+                                throttleRequests: false,
+                                onTileLoad: that._onTileLoad.bind( that )
+                            });
                         let rt = that._nameSpace.doc._x3dElem.runtime;
                         const viewportOpts = {
                             width: rt.getWidth(),
                             height: rt.getHeight(),
-                            latitude: 40+0.2/60,
-                            longitude: -75-36/60,
+                            latitude: tileset3d.cartographicCenter[1],
+                            longitude: tileset3d.cartographicCenter[0],
                             pitch: 2, // from vertical
                             bearing: 10, // from N ccw
                             zoom: 1,
-                            nearZ: 0.59679,
-                            farZ: 5967.85292
+                            //nearZ: 0.59679,
+                            //farZ: 5967.85292
                             //projectionMatrix: rt.projectionMatrix().toGL()
                         }
                         let viewport = new that._WebMercatorViewport( viewportOpts );
                         tileset3d.update ( viewport );
                         console.log ( tileset3d );
-                        //return tileset3d;
+                    },
+                    function rejected ( reason )
+                    {
+                        x3dom.debug.logInfo ( ' Tileset rejected: ' + reason );
+                        // try next url
                     }
                 );
 
@@ -306,6 +291,36 @@ x3dom.registerNodeType(
                 //     this._cf.rootNode.addLink( inline );
                 // }
 
+                this.invalidateVolume();
+            },
+
+            _onTileLoad : function ( tile )
+            {
+                console.log ( tile );
+                //if ( this._loaded.has( tile.id ) ) return
+                this._loaded.set( tile.id, "loaded");
+                
+                let glTFTransform = new x3dom.nodeTypes.Transform( this._ctx );
+                glTFTransform._vf.rotation = x3dom.fields.Quaternion.parseAxisAngle( "1 0 0 " + Math.PI/2 );
+                glTFTransform.fieldChanged("rotation");
+                
+                let glTFInline = new x3dom.nodeTypes.Inline( this._ctx );
+                glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
+                glTFInline.nodeChanged(); //is necessary and loads the inline scene
+
+                glTFTransform.addChild( glTFInline ); 
+                //x3dom.debug.logInfo( "add url: " + url );
+                glTFTransform.nodeChanged(); //is necessary and loads the inline scene
+                
+                let geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
+                geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
+                geoOriginTransform._vf.globalGeoOrigin = true;
+                
+                geoOriginTransform.addChild( glTFTransform ); 
+                geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
+                
+                this.addChild( geoOriginTransform );
+                //this.nodeChanged();
                 this.invalidateVolume();
             },
 

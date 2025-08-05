@@ -313,13 +313,13 @@
             "TimeTrigger.js"
         ]
     },
-    "_comment": "loaders.gl files need to be in exact order:"
     "FULL":
     {
         "src/util/":
         [
             "glTF/draco-1.5.5.js"
         ],
+        "comment: loaders.gl files below need to be in this order": [],
         "src/util/loaders.gl/":
         [
             "setup.js",

@@ -24,8 +24,8 @@
             <DirectionalLight ambientIntensity="0.1"></DirectionalLight>
             <Background skyColor='"0 0 0.2"'></Background>
             <GeoViewpoint headlight="true" centerOfRotation="40.041665 -75.61785 0" position="40.029 -75.6148 20">
-                <!-- <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0">
-                </GeoOrigin> -->
+                <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0">
+                </GeoOrigin>
             </GeoViewpoint>
             <Shape>
                 <Appearance>
@@ -41,13 +41,13 @@
                     xDimension='2' xSpacing='0.063852' 
                     zDimension='2' zSpacing='0.025897'
                     yScale='1'>
-                    <!-- <GeoOrigin USE="GO"></GeoOrigin> -->
+                    <GeoOrigin USE="GO"></GeoOrigin>
                 </GeoElevationGrid>
             </Shape>
-            <GeoTransform globalGeoOrigin="true">
+            <!-- <GeoTransform globalGeoOrigin="true"> -->
                 <!-- <GeoOrigin USE="GO"></GeoOrigin> -->
                 <Inline onload='handleLoad(event)' id="inline" nameSpaceName="tiles" url="GeoTileset_rootTile.x3d" ></Inline>
-            </GeoTransform>
+            <!-- </GeoTransform> -->
         </Scene>
     </X3D>
     <label _style='margin: 5px;' for="x3d-select">Choose an example:</label>
@@ -68,7 +68,7 @@
         inline.setAttribute('url', event.target.options[event.target.selectedIndex].value + ext);
     }
     function handleLoad(event) {
-        setTimeout(()=>{document.querySelector('X3D').runtime.showAll('negZ');}, 3000);
+        setTimeout(()=>{document.querySelector('X3D').runtime.fitAll();}, 3000);
     }
 </script>
 </html>
