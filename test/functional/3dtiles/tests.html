@@ -21,10 +21,10 @@
     <X3D xmlns="http://www.web3d.org/specifications/x3d-namespace" showStat="true" showLog="false" width="800px" height="600px">
         <Scene>
             <!-- <NavigationInfo headlight="true"></NavigationInfo> -->
-            <DirectionalLight ambientIntensity="0.1"></DirectionalLight>
+            <DirectionalLight direction="0, -1, -1" ambientIntensity="0.2"></DirectionalLight>
             <Background skyColor='"0 0 0.2"'></Background>
             <GeoViewpoint headlight="true" centerOfRotation="40.041665 -75.61785 0" position="40.029 -75.6148 20">
-                <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0">
+                <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0" rotateYUp="true">
                 </GeoOrigin>
             </GeoViewpoint>
             <Shape>
@@ -46,7 +46,7 @@
             </Shape>
             <!-- <GeoTransform globalGeoOrigin="true"> -->
                 <!-- <GeoOrigin USE="GO"></GeoOrigin> -->
-                <Inline onload='handleLoad(event)' id="inline" nameSpaceName="tiles" url="GeoTileset_rootTile.x3d" ></Inline>
+                <Inline onload='handleLoad(event)' id="inline" nameSpaceName="tiles" url="GeoTileset_withTransforms.x3d" ></Inline>
             <!-- </GeoTransform> -->
         </Scene>
     </X3D>
@@ -57,7 +57,10 @@
             id="x3d-select" onchange='handleChange(event)'>
         <option>glbContentInline</option>
         <option>GeoTileset_rootTile</option>
-        <option value="none" selected>--Please choose a x3d scene--</option>
+        <option selected >GeoTileset_withTransforms</option>
+        <option disabled >GeoTileset_emptyRoot</option>
+        <option disabled >GeoTileset_multipleContents</option>
+        <option value="none" >--Please choose a x3d scene--</option>
     </select>
 </body>
 <script>
@@ -68,7 +71,7 @@
         inline.setAttribute('url', event.target.options[event.target.selectedIndex].value + ext);
     }
     function handleLoad(event) {
-        setTimeout(()=>{document.querySelector('X3D').runtime.fitAll();}, 3000);
+        setTimeout(()=>{document.querySelector('X3D').runtime.showAll("negY");}, 3000);
     }
 </script>
 </html>

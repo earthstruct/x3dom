@@ -330,6 +330,7 @@
         ],
         "src/nodes/Geospatial/":
         [
+            "GeoOGC3DTiles.js",
             "GeoTileset.js",
             "GeoCoordinate.js",
             "GeoElevationGrid.js",

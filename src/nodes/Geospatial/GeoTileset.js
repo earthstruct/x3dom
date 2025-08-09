@@ -4,11 +4,11 @@
  * http://www.x3dom.org
  *
  * (C)2009 Fraunhofer IGD, Darmstadt, Germany
- * (C)2016 Andreas Plesch, Waltham, MA, U.S.A
+ * (C)2025 Andreas Plesch, Waltham, MA, U.S.A
  * Dual licensed under the MIT and GPL
  */
 
-/* ### GeoLOD ### */
+/* ### GeoTileset ### */
 x3dom.registerNodeType(
     "GeoTileset",
     "Geospatial",
@@ -41,7 +41,7 @@ x3dom.registerNodeType(
             //this.addField_MFString( ctx, "geoSystem", [ "GD", "WE" ] );
 
             /**
-             * The rootUrl specifies the json file for the tileset.
+             * The rootUrl specifies the json or x3d file for the tileset.
              * @var {x3dom.fields.MFString} rootUrl
              * @memberof x3dom.nodeTypes.GeoTileset
              * @initvalue []
@@ -60,15 +60,6 @@ x3dom.registerNodeType(
              */
             this.addField_SFNode( "geoOrigin", x3dom.nodeTypes.GeoOrigin );
 
-            /**
-             * The geoTransform field is used to wrap the inline children internally.
-             * @var {x3dom.fields.SFNode} geoTransform
-             * @memberof x3dom.nodeTypes.GeoTileset
-             * @initvalue x3dom.nodeTypes.GeoTransform
-             * @field x3d
-             * @instance
-             */
-            
             this._ctx = ctx;
 
             this._loaded = new Map();
@@ -247,8 +238,17 @@ x3dom.registerNodeType(
             nodeChanged : function ()
             {
                 //this._needReRender = true;
-                const tilesetJsonPromise = this._load(
-                    this._vf.rootUrl[0], this._Tiles3DLoader, {'3d-tiles': {isTileset: true}});
+                let tilesetJson = this._xmlNode._tilesetJson; // may have been provided
+                let tilesetJsonPromise;
+                if ( tilesetJson )
+                {
+                    tilesetJsonPromise = Promise.resolve( tilesetJson );
+                }
+                else
+                {  
+                    tilesetJsonPromise = this._load(
+                        this._vf.rootUrl[0], this._Tiles3DLoader, {'3d-tiles': {isTileset: true}});
+                }
                 var that = this;
                 tilesetJsonPromise.then( 
                     function fullfilled ( tilesetJson )
@@ -302,21 +302,27 @@ x3dom.registerNodeType(
                 
                 let glTFTransform = new x3dom.nodeTypes.Transform( this._ctx );
                 glTFTransform._vf.rotation = x3dom.fields.Quaternion.parseAxisAngle( "1 0 0 " + Math.PI/2 );
-                glTFTransform.fieldChanged("rotation");
+                glTFTransform.fieldChanged("rotation"); //applies to trafo  
                 
                 let glTFInline = new x3dom.nodeTypes.Inline( this._ctx );
                 glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
                 glTFInline.nodeChanged(); //is necessary and loads the inline scene
 
                 glTFTransform.addChild( glTFInline ); 
-                //x3dom.debug.logInfo( "add url: " + url );
-                glTFTransform.nodeChanged(); //is necessary and loads the inline scene
+                glTFTransform.nodeChanged(); //is necessary
                 
+                let tileTransform = new x3dom.nodeTypes.MatrixTransform( this._ctx );
+                tileTransform._vf.matrix = x3dom.fields.SFMatrix4f.fromArray( tile.transform ).transpose();
+                tileTransform.fieldChanged("matrix"); //applies to trafo
+                //tileTransform._trafo.setFromArray ( tile.transform ); //shortcut works but does not update field  
+                tileTransform.addChild( glTFTransform ); 
+                tileTransform.nodeChanged();
+
                 let geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
                 geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
                 geoOriginTransform._vf.globalGeoOrigin = true;
                 
-                geoOriginTransform.addChild( glTFTransform ); 
+                geoOriginTransform.addChild( tileTransform ); 
                 geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
                 
                 this.addChild( geoOriginTransform );
