@@ -68,7 +68,13 @@ x3dom.registerNodeType(
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
             this._Tileset3D = x3dom.loaders.tiles.Tileset3D;
             this._Viewport = x3dom.deck.core.Viewport;
-            this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;x3dom.deck.core.WebMercatorViewport
+            this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;x3dom.deck.core.WebMercatorViewport;
+
+            this._geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
+            this._geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
+            this._geoOriginTransform._vf.globalGeoOrigin = true;
+            this._geoOriginTransform.nodeChanged();
+            this.addChild( this._geoOriginTransform );
         },
         {
             _collectDrawableObjects : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
@@ -238,7 +244,7 @@ x3dom.registerNodeType(
             nodeChanged : function ()
             {
                 //this._needReRender = true;
-                let tilesetJson = this._xmlNode._tilesetJson; // may have been provided
+                let tilesetJson = this._xmlNode._tilesetJson; // may have been provided by GeoOGC3DTileset
                 let tilesetJsonPromise;
                 if ( tilesetJson )
                 {
@@ -247,7 +253,7 @@ x3dom.registerNodeType(
                 else
                 {  
                     tilesetJsonPromise = this._load(
-                        this._vf.rootUrl[0], this._Tiles3DLoader, {'3d-tiles': {isTileset: true}});
+                        this._vf.rootUrl[0], this._Tiles3DLoader, { '3d-tiles': {isTileset: true} } );
                 }
                 var that = this;
                 tilesetJsonPromise.then( 
@@ -267,14 +273,15 @@ x3dom.registerNodeType(
                             longitude: tileset3d.cartographicCenter[0],
                             pitch: 2, // from vertical
                             bearing: 10, // from N ccw
-                            zoom: 1,
-                            //nearZ: 0.59679,
-                            //farZ: 5967.85292
-                            //projectionMatrix: rt.projectionMatrix().toGL()
+                            zoom: 14, // size=360/2^zoom; 360/size=2^zoom; zoom=ln2(360/size);
+                            // nearZ: 0.59679,
+                            // farZ: 5967.85292
+                            // projectionMatrix: rt.projectionMatrix().toGL()
                         }
-                        let viewport = new that._WebMercatorViewport( viewportOpts );
-                        tileset3d.update ( viewport );
+                        that.viewport = new that._WebMercatorViewport( viewportOpts );
+                        tileset3d.update ( that.viewport );
                         console.log ( tileset3d );
+                        return tileset3d.selectTiles ( that.viewport );
                     },
                     function rejected ( reason )
                     {
@@ -300,32 +307,44 @@ x3dom.registerNodeType(
                 //if ( this._loaded.has( tile.id ) ) return
                 this._loaded.set( tile.id, "loaded");
                 
-                let glTFTransform = new x3dom.nodeTypes.Transform( this._ctx );
+                if ( tile.hasTilesetContent ) // needs another update to continue to traverse
+                {
+                    tile.tileset.update ( this.viewport ); // kicks off next onTileLoad call
+                    return;
+                }
+
+                const tileCtx =
+                {
+                    doc       : this._ctx.doc,
+                    runtime   : this._ctx.runtime,
+                    xmlNode   : this._ctx.xmlNode.cloneNode( true ), // overwritten
+                    nameSpace : this._ctx.nameSpace
+                };
+
+                tileCtx.xmlNode = document.createElement('Transform');
+                let glTFTransform = new x3dom.nodeTypes.Transform( tileCtx );
                 glTFTransform._vf.rotation = x3dom.fields.Quaternion.parseAxisAngle( "1 0 0 " + Math.PI/2 );
                 glTFTransform.fieldChanged("rotation"); //applies to trafo  
                 
-                let glTFInline = new x3dom.nodeTypes.Inline( this._ctx );
+                tileCtx.xmlNode = document.createElement('Inline');
+                let glTFInline = new x3dom.nodeTypes.Inline( tileCtx );
                 glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
                 glTFInline.nodeChanged(); //is necessary and loads the inline scene
 
                 glTFTransform.addChild( glTFInline ); 
                 glTFTransform.nodeChanged(); //is necessary
                 
-                let tileTransform = new x3dom.nodeTypes.MatrixTransform( this._ctx );
-                tileTransform._vf.matrix = x3dom.fields.SFMatrix4f.fromArray( tile.transform ).transpose();
+                tileCtx.xmlNode = document.createElement('MatrixTransform');
+                let tileTransform = new x3dom.nodeTypes.MatrixTransform( tileCtx );
+                tileTransform._vf.matrix = x3dom.fields.SFMatrix4f.fromArray( tile.computedTransform ).transpose();
                 tileTransform.fieldChanged("matrix"); //applies to trafo
-                //tileTransform._trafo.setFromArray ( tile.transform ); //shortcut works but does not update field  
+                //tileTransform._trafo.setFromArray ( tile.computedTransform ); //shortcut works but does not update field  
                 tileTransform.addChild( glTFTransform ); 
                 tileTransform.nodeChanged();
 
-                let geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
-                geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
-                geoOriginTransform._vf.globalGeoOrigin = true;
+                this._geoOriginTransform.addChild( tileTransform ); 
+                this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
                 
-                geoOriginTransform.addChild( tileTransform ); 
-                geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
-                
-                this.addChild( geoOriginTransform );
                 //this.nodeChanged();
                 this.invalidateVolume();
             },
