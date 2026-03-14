@@ -68,7 +68,7 @@ x3dom.registerNodeType(
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
             this._Tileset3D = x3dom.loaders.tiles.Tileset3D;
             this._Viewport = x3dom.deck.core.Viewport;
-            this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;x3dom.deck.core.WebMercatorViewport;
+            this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;//x3dom.deck.core.WebMercatorViewport;
 
             this._geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
             this._geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
@@ -277,7 +277,13 @@ x3dom.registerNodeType(
                             // nearZ: 0.59679,
                             // farZ: 5967.85292
                             // projectionMatrix: rt.projectionMatrix().toGL()
-                        }
+                        };
+                        let zoom = that.getZoomFromElevation( {
+                            elevation: 7500,
+                            latitude: viewportOpts.latitude,
+                            height: viewportOpts.height
+                        } );
+                        console.log ( zoom );
                         that.viewport = new that._WebMercatorViewport( viewportOpts );
                         tileset3d.update ( that.viewport );
                         console.log ( tileset3d );
@@ -364,6 +370,78 @@ x3dom.registerNodeType(
 
                     this.invalidateVolume();
                 }
+            },
+
+            getMeterZoom: function ( latitude ) {
+                const latCosine = Math.cos(latitude * Math.PI/180);
+                const EARTH_CIRCUMFERENCE = 40.03e6;
+                return this.scaleToZoom(EARTH_CIRCUMFERENCE * latCosine) - 9;
+            },
+
+            scaleToZoom: function (scale) {
+                return Math.log2(scale);
+            },
+
+            fovyToAltitude: function (fovy) {
+                return 0.5 / Math.tan(0.5 * fovy * Math.PI/180);
+            },
+
+            /**
+             * Returns the zoom level that will position the camera at the given elevation above the ground.
+             * Can be used to create a WebMercatorViewport from a camera at a known physical elevation (e.g. for 3D tileset traversal).
+             *
+             * @param options
+             * @param options.elevation - Physical camera elevation in meters above the ground
+             * @param options.latitude - Latitude of the viewport center in degrees
+             * @param options.height - Height of the viewport in pixels
+             * @param options.pitch - Tilt of the camera in degrees. Default `0`
+             * @param options.fovy - Camera field of view in degrees. If provided, overrides `altitude`
+             * @param options.altitude - Camera altitude relative to the viewport height. Default `1.5`
+             * @returns Zoom level for use in WebMercatorViewport
+             */
+            getZoomFromElevation: function getZoomFromElevation( options = {
+                elevation: 0,
+                latitude: 0,
+                height: 0,
+                pitch: 0,
+                fovy: null,
+                altitude: 1.5
+                }) {
+                    const {elevation, latitude, height, pitch = 0, fovy, altitude = 1.5} = options;
+                    const altitudeRatio = fovy ? fovyToAltitude(fovy) : altitude;
+                    return (
+                        this.getMeterZoom(latitude) +
+                            Math.log2((altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) / elevation)
+                    );
+            },
+
+            /**
+             * Returns the camera elevation in meters for the given zoom level.
+             * This is the inverse of `getZoomFromElevation`.
+             *
+             * @param options
+             * @param options.zoom - Zoom level
+             * @param options.latitude - Latitude of the viewport center in degrees
+             * @param options.height - Height of the viewport in pixels
+             * @param options.pitch - Tilt of the camera in degrees. Default `0`
+             * @param options.fovy - Camera field of view in degrees. If provided, overrides `altitude`
+             * @param options.altitude - Camera altitude relative to the viewport height. Default `1.5`
+             * @returns Camera elevation in meters above the ground
+             */
+            getElevationFromZoom: function getElevationFromZoom(options = {
+                zoom: 0,
+                latitude: 0,
+                height: 0,
+                pitch: 0,
+                fovy: null,
+                altitude: 1.5
+            }) {
+            const {zoom, latitude, height, pitch = 0, fovy, altitude = 1.5} = options;
+            const altitudeRatio = fovy ? this.fovyToAltitude(fovy) : altitude;
+            return (
+                (altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) /
+                Math.pow(2, zoom - this.getMeterZoom(latitude))
+            );
             }
         }
     )
