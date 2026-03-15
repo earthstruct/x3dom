@@ -96,6 +96,39 @@ x3dom.registerNodeType(
                 this.visitChildren( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes );
             },
 
+            onBeforeCollectChildNodes : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
+            {
+                var mat_view = drawableCollection.viewMatrix;
+                var center = new x3dom.fields.SFVec3f( 0, 0, 0 ); // eye
+                center = mat_view.inverse().multMatrixPnt( center );
+                //transform eye point to the LOD node's local coordinate system
+                var eye = transform.inverse().multMatrixPnt( center );
+                //console.log('eye:', eye);
+                var geoSystem = [ 'GC', 'WE' ];
+                var gd = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGD( geoSystem, this._cf.geoOrigin, [ eye ] )[0];
+                console.log('gd:', gd);
+                //this._geoOriginTransform._childNodes = [];//use removeChild on each in array
+                let rt = this._nameSpace.doc._x3dElem.runtime;
+                let height = rt.getHeight();
+                let zoom = this.getZoomFromElevation( {
+                    elevation: gd.z,
+                    latitude: gd.y,
+                    height: height
+                } );
+                console.log ( zoom );
+                const viewportOpts = {
+                    width: rt.getWidth(),
+                    height: height,
+                    latitude: gd.y,
+                    longitude: gd.x,
+                    pitch: 2, // from vertical
+                    bearing: 10, // from N ccw
+                    zoom: zoom
+                };
+                let viewport = new this._WebMercatorViewport( viewportOpts );
+                this.tileset3d.update ( viewport );
+            },
+            
             visitChildren : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
             {
                 var i = 0,
@@ -285,9 +318,10 @@ x3dom.registerNodeType(
                         } );
                         console.log ( zoom );
                         that.viewport = new that._WebMercatorViewport( viewportOpts );
-                        tileset3d.update ( that.viewport );
+                        //tileset3d.update ( that.viewport );
                         console.log ( tileset3d );
-                        return tileset3d.selectTiles ( that.viewport );
+                        that.tileset3d = tileset3d;
+                        return //tileset3d.selectTiles ( that.viewport );
                     },
                     function rejected ( reason )
                     {
