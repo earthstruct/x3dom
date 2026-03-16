@@ -63,6 +63,7 @@ x3dom.registerNodeType(
             this._ctx = ctx;
 
             this._loaded = new Map();
+            this._inlined = new Set();
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
@@ -105,28 +106,56 @@ x3dom.registerNodeType(
                 var eye = transform.inverse().multMatrixPnt( center );
                 //console.log('eye:', eye);
                 var geoSystem = [ 'GC', 'WE' ];
+                var eyegc = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGC( geoSystem, this._cf.geoOrigin, [ eye ] )[0];
                 var gd = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGD( geoSystem, this._cf.geoOrigin, [ eye ] )[0];
-                console.log('gd:', gd);
-                //this._geoOriginTransform._childNodes = [];//use removeChild on each in array
+                //console.log('gd:', gd);
+                //do pitch and bearing
+                let forward = new x3dom.fields.SFVec3f( 0, 0, -100 ); //into the screen
+                forward = mat_view.inverse().multMatrixPnt( forward );
+                forward = transform.inverse().multMatrixPnt( forward );
+                let fwdgc = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGC( geoSystem, this._cf.geoOrigin, [ forward ] )[0];
+                let negFwdDir = eyegc.subtract( fwdgc );
+                let rotation = x3dom.fields.Quaternion.rotateFromTo( eyegc, negFwdDir );
+                let pitch = rotation.angle() * 180/Math.PI; 
+                console.log( pitch );
+                //get North vector from GD or Northpole GC
+
+                //let northPoleGC = new x3dom.fields.SFVec3f( 0, 0, 6356752.29822);//6378137*(1-1/298.257) );
+                let northShiftGD = new x3dom.fields.SFVec3f( gd.y + 0.001, gd.x, gd.z );
+                var northShiftGC = x3dom.nodeTypes.GeoCoordinate.prototype.GDtoGC( geoSystem, [ northShiftGD ] )[0]; 
+                let north = northShiftGC.subtract( eyegc );
+                //project fwd onto tangential plane
+                let fwdDir = negFwdDir.negate();
+                let eyegcN = eyegc.normalize();
+                let fwdPlaneNormal = eyegcN.multiply(fwdDir.dot( eyegcN ));
+                let fwdPlane = fwdDir.subtract(fwdPlaneNormal);
+                
+                rotation = x3dom.fields.Quaternion.rotateFromTo( fwdPlane, north );
+                //rotation to north vector
+                //bearing
+                let bearing = rotation.toAxisAngle();//angle() * 180/Math.PI;
+                console.log( 'bearing: ', northShiftGD, gd, north, bearing );
                 let rt = this._nameSpace.doc._x3dElem.runtime;
                 let height = rt.getHeight();
                 let zoom = this.getZoomFromElevation( {
-                    elevation: gd.z,
+                    elevation: Math.max( gd.z, 0 ),
                     latitude: gd.y,
                     height: height
                 } );
-                console.log ( zoom );
+                //console.log ( zoom );
                 const viewportOpts = {
                     width: rt.getWidth(),
                     height: height,
                     latitude: gd.y,
                     longitude: gd.x,
-                    pitch: 2, // from vertical
+                    pitch: pitch, // from vertical
                     bearing: 10, // from N ccw
                     zoom: zoom
                 };
                 let viewport = new this._WebMercatorViewport( viewportOpts );
                 this.tileset3d.update ( viewport );
+                //console.log(this.tileset3d.selectedTiles);
+                return //this.tileset3d.selectTiles ( viewport );
             },
             
             visitChildren : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
@@ -296,7 +325,9 @@ x3dom.registerNodeType(
                         const tileset3d = new that._Tileset3D( tilesetJson,
                             {
                                 throttleRequests: false,
-                                onTileLoad: that._onTileLoad.bind( that )
+                                _onTileLoad: that._onTileLoad.bind( that ),
+                                onTileUnload: that._onTileUnload.bind( that ),
+                                onTraversalComplete: that._onTraversalComplete.bind( that )
                             });
                         let rt = that._nameSpace.doc._x3dElem.runtime;
                         const viewportOpts = {
@@ -316,7 +347,7 @@ x3dom.registerNodeType(
                             latitude: viewportOpts.latitude,
                             height: viewportOpts.height
                         } );
-                        console.log ( zoom );
+                        //console.log ( zoom );
                         that.viewport = new that._WebMercatorViewport( viewportOpts );
                         //tileset3d.update ( that.viewport );
                         console.log ( tileset3d );
@@ -341,11 +372,32 @@ x3dom.registerNodeType(
                 this.invalidateVolume();
             },
 
+            _onTraversalComplete : function ( selectedTiles )
+            {
+                //console.log( "afterTraversal:", selectedTiles );
+                let selected = new Set( selectedTiles );//.map( t => t.id ));
+                let missingTiles = selected.difference( this._inlined );
+                let removedTiles = this._inlined.difference( selected );
+                this._inlined = selected;
+                missingTiles.forEach( this._onTileLoad, this );
+                removedTiles.forEach( this._onTileUnload, this );
+                //console.log( 'missing:', missingTiles );
+                //console.log( 'removed:', removedTiles );
+                this._geoOriginTransform.nodeChanged();
+                return selectedTiles; //required
+            },
+
+            _onTileUnload : function ( tile )
+            {
+                console.log( "unloaded:", tile.id );
+                this._geoOriginTransform.removeChild( this._loaded.get( tile.id ));
+                this._loaded.delete( tile.id );
+                return tile;
+            },
+
             _onTileLoad : function ( tile )
             {
                 console.log ( tile );
-                //if ( this._loaded.has( tile.id ) ) return
-                this._loaded.set( tile.id, "loaded");
                 
                 if ( tile.hasTilesetContent ) // needs another update to continue to traverse
                 {
@@ -382,6 +434,8 @@ x3dom.registerNodeType(
                 tileTransform.addChild( glTFTransform ); 
                 tileTransform.nodeChanged();
 
+                this._loaded.set( tile.id, tileTransform );
+                
                 this._geoOriginTransform.addChild( tileTransform ); 
                 this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
                 
