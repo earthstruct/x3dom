@@ -137,15 +137,16 @@ x3dom.registerNodeType(
                 let bearing = rotation[1] * rad2deg * Math.sign( axisUp );
                 //console.log( 'bearing: ', northShiftGD, gd, north, rotation[1] * 180/Math.PI, axisUp );
                 let rt = this._nameSpace.doc._x3dElem.runtime;
-                let fov = rt.viewpoint()._vf.fieldOfView;// * rad2deg;
+                let fov = rt.viewpoint()._vf.fieldOfView;// * rad2deg; // is fovy if height<width
                 let height = rt.getHeight();
                 let width = rt.getWidth();
-                let fovy = 2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
+                let fovy = fov * rad2deg; //2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
                 let zoom = this.getZoomFromElevation( {
                     elevation: Math.max( gd.z, 0 ),
                     latitude: gd.y,
                     height: height,
-                    fovy: 90 // most robust
+                    pitch: pitch,
+                    fovy: fovy // 90 is most robust
                 } );
                 //console.log ( zoom );
                 const viewportOpts = {
@@ -158,8 +159,8 @@ x3dom.registerNodeType(
                     zoom: zoom,
                     fovy: fovy
                 };
-                let viewport = new this._WebMercatorViewport( viewportOpts );
-                this.tileset3d.update ( viewport );
+                this.viewport = new this._WebMercatorViewport( viewportOpts );
+                this.tileset3d.update ( this.viewport );
                 //console.log(this.tileset3d.selectedTiles);
                 return //this.tileset3d.selectTiles ( viewport );
             },
