@@ -99,6 +99,7 @@ x3dom.registerNodeType(
 
             onBeforeCollectChildNodes : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
             {
+                const rad2deg = 180 / Math.PI;
                 var mat_view = drawableCollection.viewMatrix;
                 var center = new x3dom.fields.SFVec3f( 0, 0, 0 ); // eye
                 center = mat_view.inverse().multMatrixPnt( center );
@@ -116,10 +117,9 @@ x3dom.registerNodeType(
                 let fwdgc = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGC( geoSystem, this._cf.geoOrigin, [ forward ] )[0];
                 let negFwdDir = eyegc.subtract( fwdgc );
                 let rotation = x3dom.fields.Quaternion.rotateFromTo( eyegc, negFwdDir );
-                let pitch = rotation.angle() * 180/Math.PI; 
-                console.log( pitch );
+                let pitch = rotation.angle() * rad2deg; 
+                //console.log( pitch );
                 //get North vector from GD or Northpole GC
-
                 //let northPoleGC = new x3dom.fields.SFVec3f( 0, 0, 6356752.29822);//6378137*(1-1/298.257) );
                 let northShiftGD = new x3dom.fields.SFVec3f( gd.y + 0.001, gd.x, gd.z );
                 var northShiftGC = x3dom.nodeTypes.GeoCoordinate.prototype.GDtoGC( geoSystem, [ northShiftGD ] )[0]; 
@@ -129,28 +129,34 @@ x3dom.registerNodeType(
                 let eyegcN = eyegc.normalize();
                 let fwdPlaneNormal = eyegcN.multiply(fwdDir.dot( eyegcN ));
                 let fwdPlane = fwdDir.subtract(fwdPlaneNormal);
-                
                 rotation = x3dom.fields.Quaternion.rotateFromTo( fwdPlane, north );
                 //rotation to north vector
                 //bearing
-                let bearing = rotation.toAxisAngle();//angle() * 180/Math.PI;
-                console.log( 'bearing: ', northShiftGD, gd, north, bearing );
+                rotation = rotation.toAxisAngle();//angle() * 180/Math.PI;
+                let axisUp = rotation[0].dot( eyegcN );
+                let bearing = rotation[1] * rad2deg * Math.sign( axisUp );
+                //console.log( 'bearing: ', northShiftGD, gd, north, rotation[1] * 180/Math.PI, axisUp );
                 let rt = this._nameSpace.doc._x3dElem.runtime;
+                let fov = rt.viewpoint()._vf.fieldOfView;// * rad2deg;
                 let height = rt.getHeight();
+                let width = rt.getWidth();
+                let fovy = 2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
                 let zoom = this.getZoomFromElevation( {
                     elevation: Math.max( gd.z, 0 ),
                     latitude: gd.y,
-                    height: height
+                    height: height,
+                    fovy: 90 // most robust
                 } );
                 //console.log ( zoom );
                 const viewportOpts = {
-                    width: rt.getWidth(),
+                    width: width,
                     height: height,
                     latitude: gd.y,
                     longitude: gd.x,
                     pitch: pitch, // from vertical
-                    bearing: 10, // from N ccw
-                    zoom: zoom
+                    bearing: bearing, // from N ccw
+                    zoom: zoom,
+                    fovy: fovy
                 };
                 let viewport = new this._WebMercatorViewport( viewportOpts );
                 this.tileset3d.update ( viewport );
@@ -336,7 +342,7 @@ x3dom.registerNodeType(
                             latitude: tileset3d.cartographicCenter[1],
                             longitude: tileset3d.cartographicCenter[0],
                             pitch: 2, // from vertical
-                            bearing: 10, // from N ccw
+                            bearing: 10, //  The bearing (rotation) of the map from north, in degrees counter-clockwise (0 means north is up)
                             zoom: 14, // size=360/2^zoom; 360/size=2^zoom; zoom=ln2(360/size);
                             // nearZ: 0.59679,
                             // farZ: 5967.85292
@@ -389,7 +395,7 @@ x3dom.registerNodeType(
 
             _onTileUnload : function ( tile )
             {
-                console.log( "unloaded:", tile.id );
+                console.log( "unloaded:", tile.screenSpaceError, tile.id );
                 this._geoOriginTransform.removeChild( this._loaded.get( tile.id ));
                 this._loaded.delete( tile.id );
                 return tile;
@@ -397,8 +403,8 @@ x3dom.registerNodeType(
 
             _onTileLoad : function ( tile )
             {
-                console.log ( tile );
-                
+                console.log ( tile.screenSpaceError, tile );
+                //tile.lodMetricValue = Math.max(tile.lodMetricValue, 10);
                 if ( tile.hasTilesetContent ) // needs another update to continue to traverse
                 {
                     tile.tileset.update ( this.viewport ); // kicks off next onTileLoad call
@@ -496,7 +502,7 @@ x3dom.registerNodeType(
                 altitude: 1.5
                 }) {
                     const {elevation, latitude, height, pitch = 0, fovy, altitude = 1.5} = options;
-                    const altitudeRatio = fovy ? fovyToAltitude(fovy) : altitude;
+                    const altitudeRatio = fovy ? this.fovyToAltitude(fovy) : altitude;
                     return (
                         this.getMeterZoom(latitude) +
                             Math.log2((altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) / elevation)
