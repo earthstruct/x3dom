@@ -142,7 +142,7 @@ x3dom.registerNodeType(
                 let width = rt.getWidth();
                 let fovy = fov * rad2deg; //2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
                 let zoom = this.getZoomFromElevation( {
-                    elevation: Math.max( gd.z, 0 ),
+                    elevation: Math.max( gd.z, 1 ), //not 0, divide by zero error
                     latitude: gd.y,
                     height: height,
                     pitch: pitch,
@@ -160,9 +160,9 @@ x3dom.registerNodeType(
                     fovy: fovy
                 };
                 this.viewport = new this._WebMercatorViewport( viewportOpts );
-                this.tileset3d.update ( this.viewport );
+                //this.tileset3d.update ( this.viewport );
                 //console.log(this.tileset3d.selectedTiles);
-                return //this.tileset3d.selectTiles ( viewport );
+                return this.tileset3d.selectTiles ( this.viewport ); //select tiles seems to time better
             },
             
             visitChildren : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
@@ -506,7 +506,7 @@ x3dom.registerNodeType(
                     const altitudeRatio = fovy ? this.fovyToAltitude(fovy) : altitude;
                     return (
                         this.getMeterZoom(latitude) +
-                            Math.log2((altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) / elevation)
+                            Math.log2(Math.abs((altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) / elevation))
                     );
             },
 
