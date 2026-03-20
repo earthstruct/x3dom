@@ -64,6 +64,7 @@ x3dom.registerNodeType(
 
             this._loaded = new Map();
             this._inlined = new Set();
+            this._initialUpdate = true;
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
@@ -99,6 +100,11 @@ x3dom.registerNodeType(
 
             onBeforeCollectChildNodes : function ( transform, drawableCollection, singlePath, invalidateCache, planeMask, clipPlanes )
             {
+                if (this._initialUpdate)
+                {
+                    this._initialUpdate = false; 
+                    return
+                }
                 const rad2deg = 180 / Math.PI;
                 var mat_view = drawableCollection.viewMatrix;
                 var center = new x3dom.fields.SFVec3f( 0, 0, 0 ); // eye
@@ -333,7 +339,7 @@ x3dom.registerNodeType(
                             {
                                 throttleRequests: false,
                                 _onTileLoad: that._onTileLoad.bind( that ),
-                                onTileUnload: that._onTileUnload.bind( that ),
+                                _onTileUnload: that._onTileUnload.bind( that ),
                                 onTraversalComplete: that._onTraversalComplete.bind( that )
                             });
                         let rt = that._nameSpace.doc._x3dElem.runtime;
@@ -342,7 +348,7 @@ x3dom.registerNodeType(
                             height: rt.getHeight(),
                             latitude: tileset3d.cartographicCenter[1],
                             longitude: tileset3d.cartographicCenter[0],
-                            pitch: 2, // from vertical
+                            pitch: 1, // from vertical
                             bearing: 10, //  The bearing (rotation) of the map from north, in degrees counter-clockwise (0 means north is up)
                             zoom: 14, // size=360/2^zoom; 360/size=2^zoom; zoom=ln2(360/size);
                             // nearZ: 0.59679,
@@ -356,7 +362,8 @@ x3dom.registerNodeType(
                         } );
                         //console.log ( zoom );
                         that.viewport = new that._WebMercatorViewport( viewportOpts );
-                        //tileset3d.update ( that.viewport );
+                        tileset3d.update ( that.viewport );
+                        this._initialUpdate = true;
                         console.log ( tileset3d );
                         that.tileset3d = tileset3d;
                         return //tileset3d.selectTiles ( that.viewport );
