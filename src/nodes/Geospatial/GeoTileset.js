@@ -105,6 +105,12 @@ x3dom.registerNodeType(
                     this._initialUpdate = false; 
                     return
                 }
+                let rt = this._nameSpace.doc._x3dElem.runtime;
+                if (rt.canvas.doc.isAnimating())
+                {
+                    console.log("animating");
+                    return
+                }
                 const rad2deg = 180 / Math.PI;
                 var mat_view = drawableCollection.viewMatrix;
                 var center = new x3dom.fields.SFVec3f( 0, 0, 0 ); // eye
@@ -142,7 +148,6 @@ x3dom.registerNodeType(
                 let axisUp = rotation[0].dot( eyegcN );
                 let bearing = rotation[1] * rad2deg * Math.sign( axisUp );
                 //console.log( 'bearing: ', northShiftGD, gd, north, rotation[1] * 180/Math.PI, axisUp );
-                let rt = this._nameSpace.doc._x3dElem.runtime;
                 let fov = rt.viewpoint()._vf.fieldOfView;// * rad2deg; // is fovy if height<width
                 let height = rt.getHeight();
                 let width = rt.getWidth();
@@ -154,6 +159,10 @@ x3dom.registerNodeType(
                     pitch: pitch,
                     fovy: fovy // 90 is most robust
                 } );
+                rt.addMeasurement("pitch", pitch);
+                rt.addMeasurement("bearing", bearing);
+                rt.addMeasurement("zoom", zoom);
+                rt.addInfo("#TILES", this.tileset3d.selectedTiles.length);
                 //console.log ( zoom );
                 const viewportOpts = {
                     width: width,
@@ -439,14 +448,18 @@ x3dom.registerNodeType(
                 tileCtx.xmlNode = document.createElement('Transform');
                 let glTFTransform = new x3dom.nodeTypes.Transform( tileCtx );
                 glTFTransform._vf.rotation = x3dom.fields.Quaternion.parseAxisAngle( "1 0 0 " + Math.PI/2 );
-                glTFTransform.fieldChanged("rotation"); //applies to trafo  
+                glTFTransform.fieldChanged("rotation"); //applies to trafo
                 
                 tileCtx.xmlNode = document.createElement('Inline');
                 let glTFInline = new x3dom.nodeTypes.Inline( tileCtx );
                 glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
                 glTFInline.nodeChanged(); //is necessary and loads the inline scene
+                let dbg = !!this._nameSpace.doc._viewarea?._visDbgBuf;
+                glTFInline._vf.bboxDisplay = dbg;  
+                var bbDom = x3dom.bboxDom.cloneNode( true );
+                glTFInline._bboxNode = this._nameSpace.setupTree( bbDom, this._xmlNode.parentElement );
 
-                glTFTransform.addChild( glTFInline ); 
+                glTFTransform.addChild( glTFInline );
                 glTFTransform.nodeChanged(); //is necessary
                 
                 tileCtx.xmlNode = document.createElement('MatrixTransform');
