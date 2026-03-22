@@ -95,8 +95,17 @@ x3dom.registerNodeType(
             {
                 //this._needReRender = true;
                 if ( this._loaded.has( this._vf.url[0] ) ) return;
+                this._Tiles3DLoader.options["3d-tiles"].loadGLTF = false;
                 const tilesetJsonPromise = this._load(
-                    this._vf.url[0], this._Tiles3DLoader, {'3d-tiles': {isTileset: true}});
+                    this._vf.url[0],
+                    this._Tiles3DLoader,
+                    {
+                        '3d-tiles':
+                        {
+                            isTileset: true,
+                            loadGLTF: false // does not work
+                        }
+                    });
                 var that = this;
                 tilesetJsonPromise.then( 
                     function fullfilled ( tilesetJson )

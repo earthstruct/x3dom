@@ -327,8 +327,17 @@ x3dom.registerNodeType(
                 }
                 else
                 {  
+                    this._Tiles3DLoader.options["3d-tiles"].loadGLTF = false;
                     tilesetJsonPromise = this._load(
-                        this._vf.rootUrl[0], this._Tiles3DLoader, { '3d-tiles': {isTileset: true} } );
+                        this._vf.rootUrl[0],
+                        this._Tiles3DLoader,
+                        {
+                            '3d-tiles':
+                            {
+                                isTileset: true,
+                                loadGLTF: false // does not work
+                            }
+                        } );
                 }
                 var that = this;
                 tilesetJsonPromise.then( 
@@ -415,7 +424,7 @@ x3dom.registerNodeType(
                 //tile.lodMetricValue = Math.max(tile.lodMetricValue, 10);
                 if ( tile.hasTilesetContent ) // needs another update to continue to traverse
                 {
-                    tile.tileset.update ( this.viewport ); // kicks off next onTileLoad call
+                    tile.tileset.selectTiles ( this.viewport ); // kicks off next onTileLoad call
                     return;
                 }
 
