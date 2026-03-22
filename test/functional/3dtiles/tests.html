@@ -23,11 +23,7 @@
             <!-- <NavigationInfo headlight="true"></NavigationInfo> -->
             <DirectionalLight direction="0, -1, -1" ambientIntensity="0.2"></DirectionalLight>
             <Background skyColor='"0 0 0.2"'></Background>
-            <GeoViewpoint headlight="true" centerOfRotation="40.041665 -75.61785 0" position="40.029 -75.6148 20">
-                <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0" rotateYUp="true">
-                </GeoOrigin>
-            </GeoViewpoint>
-            <Shape>
+            <!--Shape id="basemap">
                 <Appearance>
                     <Material diffuseColor='0.4 1.0 0.0'></Material>
                     <ImageTexture url='"./basemap.jpg" "https://github.com/user-attachments/assets/cdea43dd-8128-4b5e-ad24-a97317194d63"'>
@@ -43,7 +39,7 @@
                     yScale='1'>
                     <GeoOrigin USE="GO"></GeoOrigin>
                 </GeoElevationGrid>
-            </Shape>
+            </Shape-->
             <!-- <GeoTransform globalGeoOrigin="true"> -->
                 <!-- <GeoOrigin USE="GO"></GeoOrigin> -->
                 <Inline onload='handleLoad(event)' id="inline" nameSpaceName="tiles" url="GeoTileset_Tileset.x3d" ></Inline>
@@ -63,6 +59,11 @@
         <option>GeoTileset_withExternalResources</option>
         <option>GeoTileset_PointCloudWithTransform</option>
         <option>GeoTileset_PointCloudRGBA</option>
+        <option>PlanetLabs_Angkor_Wat</option>
+        <option>PlanetLabs_Cocabamba</option>
+        <option>PlanetLabs_San_Francisco</option>
+        <option>PlanetLabs_SP_Crater</option>
+        <option>PlanetLabs_SP_Crater_globalGC</option>
         <option disabled >GeoTileset_multipleContents</option>
         <option value="none" >--Please choose a x3d scene--</option>
     </select>
@@ -71,7 +72,8 @@
     const inline = document.querySelector('#Inline');
     const ext = '.x3d';
     function handleChange(event) {
-        inline.setAttribute('url', event.target.options[event.target.selectedIndex].value + ext);
+        let option = event.target.options[event.target.selectedIndex].value;
+        inline.setAttribute('url', option + ext);
     }
     function handleLoad(event) {
         setTimeout(()=>{document.querySelector('X3D').runtime.showAll("negY");}, 3000);
