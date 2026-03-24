@@ -114,8 +114,20 @@ x3dom.registerNodeType(
                 const rad2deg = 180 / Math.PI;
                 var mat_view = drawableCollection.viewMatrix;
                 var center = new x3dom.fields.SFVec3f( 0, 0, 0 ); // eye
+                // if ( mat_view.det() == 0 )
+                // {
+                //     x3dom.debug.logWarning( "no inverse of view matrix: singular matrix, " +
+                //                 "skip tiles update" );
+                //     return
+                // }
                 center = mat_view.inverse().multMatrixPnt( center );
                 //transform eye point to the LOD node's local coordinate system
+                // if ( transform.det() == 0 )
+                // {
+                //     x3dom.debug.logWarning( "no inverse of tranform matrix: singular matrix, " +
+                //                 "skip tiles update" );
+                //     return
+                // }
                 var eye = transform.inverse().multMatrixPnt( center );
                 //console.log('eye:', eye);
                 var geoSystem = [ 'GC', 'WE' ];
@@ -174,6 +186,16 @@ x3dom.registerNodeType(
                     zoom: zoom,
                     fovy: fovy
                 };
+                let viewport_unchanged = true;
+                for ( const p in viewportOpts )
+                {
+                    viewport_unchanged &&= viewportOpts[p] == this.viewport[p];
+                }
+                if ( viewport_unchanged )
+                {
+                    console.log( 'viewport unchanged, skipping update' );
+                    return
+                }
                 this.viewport = new this._WebMercatorViewport( viewportOpts );
                 //this.tileset3d.update ( this.viewport );
                 //console.log(this.tileset3d.selectedTiles);
@@ -358,7 +380,11 @@ x3dom.registerNodeType(
                                 throttleRequests: false,
                                 _onTileLoad: that._onTileLoad.bind( that ),
                                 _onTileUnload: that._onTileUnload.bind( that ),
-                                onTraversalComplete: that._onTraversalComplete.bind( that )
+                                onTraversalComplete: that._onTraversalComplete.bind( that ),
+                                maximumMemoryUsage: 256, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
+                                updateTransforms: false, // true (Boolean) - Always check if the tileset modelMatrix was updated. Set to false to improve performance when the tileset remains stationary in the scene.
+                                maximumScreenSpaceError: 8, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
+                                memoryAdjustedScreenSpaceError: true, // false - Whether to adjust the maximum screen space error to comply with the maximum memory limitation
                             });
                         let rt = that._nameSpace.doc._x3dElem.runtime;
                         const viewportOpts = {
@@ -422,8 +448,15 @@ x3dom.registerNodeType(
             _onTileUnload : function ( tile )
             {
                 console.log( "unloaded:", tile.screenSpaceError, tile.id );
-                this._geoOriginTransform.removeChild( this._loaded.get( tile.id ));
-                this._loaded.delete( tile.id );
+                let x3d_tileTransform = this._loaded.get( tile );
+                setTimeout( () => // should wait until after all tiles loaded from current traveral
+                {
+                    console.log( "removing Inline: ", x3d_tileTransform );
+                    this._geoOriginTransform.removeChild( x3d_tileTransform);
+                    //this._geoOriginTransform.nodeChanged();
+                    this._geoOriginTransform.invalidateVolume();
+                }, 5000 );
+                this._loaded.delete( tile );
                 return tile;
             },
 
@@ -454,11 +487,7 @@ x3dom.registerNodeType(
                 let glTFInline = new x3dom.nodeTypes.Inline( tileCtx );
                 glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
                 glTFInline.nodeChanged(); //is necessary and loads the inline scene
-                let dbg = !!this._nameSpace.doc._viewarea?._visDbgBuf;
-                glTFInline._vf.bboxDisplay = dbg;  
-                var bbDom = x3dom.bboxDom.cloneNode( true );
-                glTFInline._bboxNode = this._nameSpace.setupTree( bbDom, this._xmlNode.parentElement );
-
+                
                 glTFTransform.addChild( glTFInline );
                 glTFTransform.nodeChanged(); //is necessary
                 
@@ -467,14 +496,18 @@ x3dom.registerNodeType(
                 tileTransform._vf.matrix = x3dom.fields.SFMatrix4f.fromArray( tile.computedTransform ).transpose();
                 tileTransform.fieldChanged("matrix"); //applies to trafo
                 //tileTransform._trafo.setFromArray ( tile.computedTransform ); //shortcut works but does not update field  
-                tileTransform.addChild( glTFTransform ); 
+                tileTransform.addChild( glTFTransform );
+                let dbg = !!this._nameSpace.doc._viewarea?._visDbgBuf;
+                tileTransform._vf.bboxDisplay = dbg;  
+                var bbDom = x3dom.bboxDom.cloneNode( true );
+                tileTransform._bboxNode = this._nameSpace.setupTree( bbDom, this._xmlNode );//.parentElement ); 
                 tileTransform.nodeChanged();
 
-                this._loaded.set( tile.id, tileTransform );
+                this._loaded.set( tile, tileTransform );
                 
                 this._geoOriginTransform.addChild( tileTransform ); 
-                this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
-                
+                //this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
+                this._geoOriginTransform.invalidateVolume();
                 //this.nodeChanged();
                 this.invalidateVolume();
             },
