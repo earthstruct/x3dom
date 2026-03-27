@@ -378,7 +378,8 @@ x3dom.registerNodeType(
                         const tileset3d = new that._Tileset3D( tilesetJson,
                             {
                                 throttleRequests: false,
-                                _onTileLoad: that._onTileLoad.bind( that ),
+                                onTileLoad: that._onTileLoad.bind( that ),
+                                __onTileLoad: that._updateX3DTiles.bind( that ),
                                 _onTileUnload: that._onTileUnload.bind( that ),
                                 onTraversalComplete: that._onTraversalComplete.bind( that ),
                                 maximumMemoryUsage: 256, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
@@ -428,6 +429,14 @@ x3dom.registerNodeType(
                 // }
 
                 this.invalidateVolume();
+            },
+
+            _updateX3DTiles : function ( tile )
+            {
+                // this._onTraversalComplete( tile.tileset.tiles.filter(
+                //     ( tile ) => tile.selected
+                // ) );
+                return
             },
 
             _onTraversalComplete : function ( selectedTiles )
@@ -504,9 +513,10 @@ x3dom.registerNodeType(
                 tileTransform.nodeChanged();
 
                 this._loaded.set( tile, tileTransform );
+                this._inlined.add( tile ); // in case tile is added onload and before traversal complete
                 
                 this._geoOriginTransform.addChild( tileTransform ); 
-                //this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
+                this._geoOriginTransform.nodeChanged(); //is necessary and loads the inline scene
                 this._geoOriginTransform.invalidateVolume();
                 //this.nodeChanged();
                 this.invalidateVolume();
