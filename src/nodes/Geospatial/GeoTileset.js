@@ -441,12 +441,24 @@ x3dom.registerNodeType(
 
             _onTraversalComplete : function ( selectedTiles )
             {
+                //selected tiles are the tiles which need to be shown
+                //so needs to check which tiles need to be hidden, eg. visible=false
+                //maintain set of x3d tiles in scene
+                //not selected now (and visible) need to become visible=false
+                //
+                //also needs to check if any hidden tiles need to be shown
+                //selected now (and not visible) need to become visible=true
+                //this.tileset3d.stats.stats has numbers
+                //
                 //console.log( "afterTraversal:", selectedTiles );
                 let selected = new Set( selectedTiles );//.map( t => t.id ));
                 let missingTiles = selected.difference( this._inlined );
                 let removedTiles = this._inlined.difference( selected );
+                //this._inlined = selected;
                 this._inlined = selected;
+                //missingTiles.forEach( this._showTile, this );
                 missingTiles.forEach( this._onTileLoad, this );
+                //removedTiles.forEach( this._hideTile, this );
                 removedTiles.forEach( this._onTileUnload, this );
                 //console.log( 'missing:', missingTiles );
                 //console.log( 'removed:', removedTiles );
@@ -456,6 +468,7 @@ x3dom.registerNodeType(
 
             _onTileUnload : function ( tile )
             {
+                //called when loader decides there is not enough memory and tiles need to be disposed
                 console.log( "unloaded:", tile.screenSpaceError, tile.id );
                 let x3d_tileTransform = this._loaded.get( tile );
                 setTimeout( () => // should wait until after all tiles loaded from current traveral
@@ -471,6 +484,7 @@ x3dom.registerNodeType(
 
             _onTileLoad : function ( tile )
             {
+                //called when a not already loaded tile needs to be created and shown
                 console.log ( tile.screenSpaceError, tile );
                 //tile.lodMetricValue = Math.max(tile.lodMetricValue, 10);
                 if ( tile.hasTilesetContent ) // needs another update to continue to traverse
