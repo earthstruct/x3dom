@@ -65,6 +65,8 @@ x3dom.registerNodeType(
             this._loaded = new Map();
             this._inlined = new Set();
             this._initialUpdate = true;
+            this._maximumScreenSpaceError = 8;
+            this._fovBuffer = 0; // for conservative culling
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
@@ -163,7 +165,7 @@ x3dom.registerNodeType(
                 let fov = rt.viewpoint()._vf.fieldOfView;// * rad2deg; // is fovy if height<width
                 let height = rt.getHeight();
                 let width = rt.getWidth();
-                let fovy = fov * rad2deg; //2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
+                let fovy = fov * rad2deg + this._fovBuffer; //2 * Math.atan( height/width * Math.tan(fov * 0.5)) * rad2deg;
                 let zoom = this.getZoomFromElevation( {
                     elevation: Math.max( gd.z, 1 ), //not 0, divide by zero error
                     latitude: gd.y,
@@ -171,10 +173,10 @@ x3dom.registerNodeType(
                     pitch: pitch,
                     fovy: fovy // 90 is most robust
                 } );
-                rt.addMeasurement("pitch", pitch);
-                rt.addMeasurement("bearing", bearing);
-                rt.addMeasurement("zoom", zoom);
-                rt.addInfo("#TILES", this.tileset3d.selectedTiles.length);
+                rt.addMeasurement( "pitch", pitch );
+                rt.addMeasurement( "bearing", bearing );
+                rt.addMeasurement( "zoom", zoom );
+                rt.addInfo( "#TILES", this.tileset3d.selectedTiles.length );
                 //console.log ( zoom );
                 const viewportOpts = {
                     width: width,
@@ -380,11 +382,11 @@ x3dom.registerNodeType(
                                 throttleRequests: false,
                                 onTileLoad: that._onTileLoad.bind( that ),
                                 __onTileLoad: that._updateX3DTiles.bind( that ),
-                                _onTileUnload: that._onTileUnload.bind( that ),
+                                onTileUnload: that._onTileUnload.bind( that ),
                                 onTraversalComplete: that._onTraversalComplete.bind( that ),
                                 maximumMemoryUsage: 256, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
                                 updateTransforms: false, // true (Boolean) - Always check if the tileset modelMatrix was updated. Set to false to improve performance when the tileset remains stationary in the scene.
-                                maximumScreenSpaceError: 8, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
+                                maximumScreenSpaceError: that._maximumScreenSpaceError, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
                                 memoryAdjustedScreenSpaceError: true, // false - Whether to adjust the maximum screen space error to comply with the maximum memory limitation
                             });
                         let rt = that._nameSpace.doc._x3dElem.runtime;
@@ -455,15 +457,24 @@ x3dom.registerNodeType(
                 let missingTiles = selected.difference( this._inlined );
                 let removedTiles = this._inlined.difference( selected );
                 //this._inlined = selected;
-                this._inlined = selected;
-                //missingTiles.forEach( this._showTile, this );
-                missingTiles.forEach( this._onTileLoad, this );
-                //removedTiles.forEach( this._hideTile, this );
-                removedTiles.forEach( this._onTileUnload, this );
+                //this._inlined = selected;
+                //missingTiles.forEach( ( tile ) => this._setTileVisible( tile, true ) );
+                selected.forEach( ( tile ) => this._setTileVisible( tile, true ) );
+                //missingTiles.forEach( this._onTileLoad, this );
+                //only hide after parent is visible and loaded, or all children are loaded and visible
+                removedTiles.forEach( ( tile ) => this._setTileVisible( tile, false ) );
+                //removedTiles.forEach( this._onTileUnload, this );
                 //console.log( 'missing:', missingTiles );
                 //console.log( 'removed:', removedTiles );
                 this._geoOriginTransform.nodeChanged();
                 return selectedTiles; //required
+            },
+
+            _setTileVisible: function ( tile, visible )
+            {
+                let x3d_tileTransform = this._loaded.get( tile );
+                x3d_tileTransform._vf.visible = !!visible;
+                //x3d_tileTransform.fieldChanged( 'render');
             },
 
             _onTileUnload : function ( tile )
