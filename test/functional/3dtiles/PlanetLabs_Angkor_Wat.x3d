@@ -9,6 +9,7 @@
                 <GeoOrigin DEF='GO' geoCoords="13.4126 103.8670 0" rotateYUp="true">
                 </GeoOrigin>
             </GeoViewpoint>
+            <DirectionalLight direction="0, -1, 1" intensity="6"></DirectionalLight>
         <!-- <Transform _rotation='1 0 0 1.5708'>     -->
 		    <GeoOGC3DTiles url='"https://storage.googleapis.com/open-cogs/planet-stac/angkor-wat/3d-geofox.ai/3DTiles/tileset.json"'>
                 <GeoOrigin USE='GO' />

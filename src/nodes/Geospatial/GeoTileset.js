@@ -51,6 +51,17 @@ x3dom.registerNodeType(
             this.addField_MFString( ctx, "rootUrl", [] );
 
             /**
+             * Specifies the maximum ScreenSpace Error.
+             * @var {x3dom.fields.SFFloat} maximumScreenSpaceError
+             * @range [1, inf]
+             * @memberof x3dom.nodeTypes.GeoTileset
+             * @initvalue 8
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFFloat( ctx, "maximumScreenSpaceError", 8 ); //100000);
+
+            /**
              * The geoOrigin field is used to specify a local coordinate frame for extended precision.
              * @var {x3dom.fields.SFNode} geoOrigin
              * @memberof x3dom.nodeTypes.GeoTileset
@@ -65,7 +76,7 @@ x3dom.registerNodeType(
             this._loaded = new Map();
             this._inlined = new Set();
             this._initialUpdate = true;
-            this._maximumScreenSpaceError = 8;
+            this._maximumScreenSpaceError = this._vf.maximumScreenSpaceError;
             this._fovBuffer = 0; // for conservative culling
 
             this._load = x3dom.loaders.core.load;
@@ -171,7 +182,7 @@ x3dom.registerNodeType(
                     latitude: gd.y,
                     height: height,
                     pitch: pitch,
-                    fovy: fovy // 90 is most robust
+                    fovy: fovy * 2.0 // 90 is most robust
                 } );
                 rt.addMeasurement( "pitch", pitch );
                 rt.addMeasurement( "bearing", bearing );
@@ -179,14 +190,14 @@ x3dom.registerNodeType(
                 rt.addInfo( "#TILES", this.tileset3d.selectedTiles.length );
                 //console.log ( zoom );
                 const viewportOpts = {
-                    width: width,
-                    height: height,
+                    width: width * 1.0,
+                    height: height * 1.0,
                     latitude: gd.y,
                     longitude: gd.x,
                     pitch: pitch, // from vertical
                     bearing: bearing, // from N ccw
                     zoom: zoom,
-                    fovy: fovy
+                    fovy: fovy * 2.0
                 };
                 let viewport_unchanged = true;
                 for ( const p in viewportOpts )
@@ -384,7 +395,7 @@ x3dom.registerNodeType(
                                 __onTileLoad: that._updateX3DTiles.bind( that ),
                                 onTileUnload: that._onTileUnload.bind( that ),
                                 onTraversalComplete: that._onTraversalComplete.bind( that ),
-                                maximumMemoryUsage: 256, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
+                                maximumMemoryUsage: 8, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
                                 updateTransforms: false, // true (Boolean) - Always check if the tileset modelMatrix was updated. Set to false to improve performance when the tileset remains stationary in the scene.
                                 maximumScreenSpaceError: that._maximumScreenSpaceError, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
                                 memoryAdjustedScreenSpaceError: true, // false - Whether to adjust the maximum screen space error to comply with the maximum memory limitation
@@ -475,6 +486,7 @@ x3dom.registerNodeType(
                 let x3d_tileTransform = this._loaded.get( tile );
                 x3d_tileTransform._vf.visible = !!visible;
                 //x3d_tileTransform.fieldChanged( 'render');
+                console.log('tile', visible, tile)
             },
 
             _onTileUnload : function ( tile )
@@ -565,17 +577,17 @@ x3dom.registerNodeType(
             },
 
             getMeterZoom: function ( latitude ) {
-                const latCosine = Math.cos(latitude * Math.PI/180);
+                const latCosine = Math.cos( latitude * Math.PI/180 );
                 const EARTH_CIRCUMFERENCE = 40.03e6;
-                return this.scaleToZoom(EARTH_CIRCUMFERENCE * latCosine) - 9;
+                return this.scaleToZoom( EARTH_CIRCUMFERENCE * latCosine ) - 9;
             },
 
-            scaleToZoom: function (scale) {
+            scaleToZoom: function ( scale ) {
                 return Math.log2(scale);
             },
 
-            fovyToAltitude: function (fovy) {
-                return 0.5 / Math.tan(0.5 * fovy * Math.PI/180);
+            fovyToAltitude: function ( fovy ) {
+                return 0.5 / Math.tan( 0.5 * fovy * Math.PI/180 );
             },
 
             /**
@@ -599,11 +611,11 @@ x3dom.registerNodeType(
                 fovy: null,
                 altitude: 1.5
                 }) {
-                    const {elevation, latitude, height, pitch = 0, fovy, altitude = 1.5} = options;
-                    const altitudeRatio = fovy ? this.fovyToAltitude(fovy) : altitude;
+                    const { elevation, latitude, height, pitch = 0, fovy, altitude = 1.5 } = options;
+                    const altitudeRatio = fovy ? this.fovyToAltitude( fovy ) : altitude;
                     return (
-                        this.getMeterZoom(latitude) +
-                            Math.log2(Math.abs((altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) / elevation))
+                        this.getMeterZoom( latitude ) +
+                            Math.log2( Math.abs(( altitudeRatio * Math.cos( pitch * ( Math.PI / 180 )) * height ) / elevation ))
                     );
             },
 
@@ -629,10 +641,10 @@ x3dom.registerNodeType(
                 altitude: 1.5
             }) {
             const {zoom, latitude, height, pitch = 0, fovy, altitude = 1.5} = options;
-            const altitudeRatio = fovy ? this.fovyToAltitude(fovy) : altitude;
+            const altitudeRatio = fovy ? this.fovyToAltitude( fovy ) : altitude;
             return (
-                (altitudeRatio * Math.cos(pitch * (Math.PI / 180)) * height) /
-                Math.pow(2, zoom - this.getMeterZoom(latitude))
+                (altitudeRatio * Math.cos( pitch * ( Math.PI / 180 )) * height ) /
+                Math.pow( 2, zoom - this.getMeterZoom( latitude ))
             );
             }
         }

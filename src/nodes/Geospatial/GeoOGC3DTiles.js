@@ -50,6 +50,17 @@ x3dom.registerNodeType(
             this.addField_SFNode( "geoOrigin", x3dom.nodeTypes.GeoOrigin );
 
             /**
+             * Specifies the maximum ScreenSpace Error.
+             * @var {x3dom.fields.SFFloat} maximumScreenSpaceError
+             * @range [1, inf]
+             * @memberof x3dom.nodeTypes.GeoTileset
+             * @initvalue 8
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFFloat( ctx, "maximumScreenSpaceError", 8 );
+
+            /**
              * The read-only tileset field holds the tile tree of the OGC tileset.
              * @var {x3dom.fields.SFNode} tileset
              * @memberof x3dom.nodeTypes.GeoOGC3DTiles
@@ -116,6 +127,7 @@ x3dom.registerNodeType(
                         let tilesetDOM = document.createElement('GeoTileset');
                         tilesetDOM.setAttribute( "containerField", "tileset" );
                         tilesetDOM.setAttribute( "geometricError", tilesetJson.geometricError );
+                        tilesetDOM.setAttribute( "maximumScreenSpaceError", that._vf.maximumScreenSpaceError );
                         tilesetDOM._tilesetJson = tilesetJson; // avoid refetching
 
                         // metadata
