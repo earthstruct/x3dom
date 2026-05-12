@@ -148,7 +148,7 @@ x3dom.registerNodeType(
                 var gd = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGD( geoSystem, this._cf.geoOrigin, [ eye ] )[0];
                 //console.log('gd:', gd);
                 //do pitch and bearing
-                let forward = new x3dom.fields.SFVec3f( 0, 0, -100 ); //into the screen
+                let forward = new x3dom.fields.SFVec3f( 0, 0, -gd.z * 0.01 ); //into the screen
                 forward = mat_view.inverse().multMatrixPnt( forward );
                 forward = transform.inverse().multMatrixPnt( forward );
                 let fwdgc = x3dom.nodeTypes.GeoCoordinate.prototype.X3DtoGC( geoSystem, this._cf.geoOrigin, [ forward ] )[0];
@@ -395,7 +395,7 @@ x3dom.registerNodeType(
                                 __onTileLoad: that._updateX3DTiles.bind( that ),
                                 onTileUnload: that._onTileUnload.bind( that ),
                                 onTraversalComplete: that._onTraversalComplete.bind( that ),
-                                maximumMemoryUsage: 8, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
+                                maximumMemoryUsage: 32, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
                                 updateTransforms: false, // true (Boolean) - Always check if the tileset modelMatrix was updated. Set to false to improve performance when the tileset remains stationary in the scene.
                                 maximumScreenSpaceError: that._maximumScreenSpaceError, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
                                 memoryAdjustedScreenSpaceError: true, // false - Whether to adjust the maximum screen space error to comply with the maximum memory limitation
@@ -498,6 +498,10 @@ x3dom.registerNodeType(
                 {
                     console.log( "removing Inline: ", x3d_tileTransform );
                     this._geoOriginTransform.removeChild( x3d_tileTransform);
+                    if ( "objectUrl" in tile )
+                    {
+                        URL.revokeObjectURL(tile.objectUrl);
+                    }
                     //this._geoOriginTransform.nodeChanged();
                     this._geoOriginTransform.invalidateVolume();
                 }, 5000 );
@@ -531,7 +535,13 @@ x3dom.registerNodeType(
                 
                 tileCtx.xmlNode = document.createElement('Inline');
                 let glTFInline = new x3dom.nodeTypes.Inline( tileCtx );
-                glTFInline._vf.url = x3dom.fields.MFString.parse( tile.contentUrl );
+                const contentUrl = this.contentUrl( tile );
+                glTFInline._vf.url = x3dom.fields.MFString.parse( contentUrl );
+                if ( contentUrl.startsWith( "blob:" ) )
+                {
+                    glTFInline._vf.contentType = "model/gltf-binary";
+                }
+
                 glTFInline.nodeChanged(); //is necessary and loads the inline scene
                 
                 glTFTransform.addChild( glTFInline );
@@ -557,6 +567,19 @@ x3dom.registerNodeType(
                 this._geoOriginTransform.invalidateVolume();
                 //this.nodeChanged();
                 this.invalidateVolume();
+            },
+
+            contentUrl : function ( tile )
+            {
+                let contentUrl = tile.contentUrl;
+                const arrayBuffer = tile.content.gltfArrayBuffer;
+                const path = URL.parse( contentUrl ).pathname; //deal with search and other params
+                if ( path.endsWith('.glb') && arrayBuffer.byteLength > 0 )
+                {
+                    contentUrl = x3dom.Utils.arrayBufferToObjectURL ( arrayBuffer, 'model/gltf-binary' );
+                    tile.objectURL = contentUrl; //for easy revoking
+                }
+                return contentUrl;
             },
 
             _fieldChanged : function ( fieldName )
