@@ -2,11 +2,15 @@ import stylistic from "@stylistic/eslint-plugin";
 
 export default [
     {
-        ignores: ["src/util/glTF/draco-1.5.5.js"],
+        ignores: [
+            "src/util/glTF/draco-1.5.5.js",
+            "src/util/loaders.gl/*.min.js",
+            "src/util/loaders.gl/*.dev.js",  
+        ],
     },
     {
         languageOptions: {
-            ecmaVersion: 6,
+            ecmaVersion: 2022,
             sourceType: "script",
         },
 

@@ -664,7 +664,7 @@ x3dom.registerNodeType(
 
             X3DtoGD : function ( geoSystem, geoOrigin, coords )
             {
-                let gc = this.X3DtoGC( geoSystem, geoOrigin, coords );
+                const gc = this.X3DtoGC( geoSystem, geoOrigin, coords );
                 return this.GCtoGD( geoSystem, gc );
             },
 

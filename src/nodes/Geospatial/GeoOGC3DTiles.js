@@ -77,7 +77,7 @@ x3dom.registerNodeType(
             this._loaded = new Map();
 
             this._load = x3dom.loaders.core.load;
-            this._Tiles3DLoader = x3dom.loaders["3d-tiles"].Tiles3DLoader;
+            this._Tiles3DLoader = x3dom.loaders[ "3d-tiles" ].Tiles3DLoader;
         },
         {
             getVolume : function ()
@@ -105,26 +105,26 @@ x3dom.registerNodeType(
             nodeChanged : function ()
             {
                 //this._needReRender = true;
-                if ( this._loaded.has( this._vf.url[0] ) ) return;
-                this._Tiles3DLoader.options["3d-tiles"].loadGLTF = false;
+                if ( this._loaded.has( this._vf.url[ 0 ] ) ) {return;}
+                this._Tiles3DLoader.options[ "3d-tiles" ].loadGLTF = false;
                 const tilesetJsonPromise = this._load(
-                    this._vf.url[0],
+                    this._vf.url[ 0 ],
                     this._Tiles3DLoader,
                     {
-                        '3d-tiles':
+                        "3d-tiles" :
                         {
-                            isTileset: true,
-                            loadGLTF: false // does not work
+                            isTileset : true,
+                            loadGLTF  : false // does not work
                         }
-                    });
+                    } );
                 var that = this;
-                tilesetJsonPromise.then( 
+                tilesetJsonPromise.then(
                     function fullfilled ( tilesetJson )
                     {
                         console.log( tilesetJson );
-                        that._loaded.set( that._vf.url[0], "loaded" );
+                        that._loaded.set( that._vf.url[ 0 ], "loaded" );
 
-                        let tilesetDOM = document.createElement('GeoTileset');
+                        const tilesetDOM = document.createElement( "GeoTileset" );
                         tilesetDOM.setAttribute( "containerField", "tileset" );
                         tilesetDOM.setAttribute( "geometricError", tilesetJson.geometricError );
                         tilesetDOM.setAttribute( "maximumScreenSpaceError", that._vf.maximumScreenSpaceError );
@@ -132,20 +132,20 @@ x3dom.registerNodeType(
 
                         // metadata
 
-                        let metadataSet = document.createElement( "MetadataSet" );
+                        const metadataSet = document.createElement( "MetadataSet" );
                         metadataSet.setAttribute( "name", "OGC 3D Tiles" );
                         metadataSet.setAttribute( "reference", "https://www.ogc.org/standards/3dtiles/" );
                         metadataSet.setAttribute( "containerField", "metadata" );
                         tilesetDOM.appendChild( metadataSet );
 
-                        metadataSet.appendChild( _createMetadataString ( "asset.version", `"${tilesetJson?.asset?.version}"` ) );
-                        metadataSet.appendChild( _createMetadataString ( "asset.tilesetVersion", `"${tilesetJson?.asset?.tilesetVersion}"` ) );
+                        metadataSet.appendChild( _createMetadataString( "asset.version", `"${tilesetJson?.asset?.version}"` ) );
+                        metadataSet.appendChild( _createMetadataString( "asset.tilesetVersion", `"${tilesetJson?.asset?.tilesetVersion}"` ) );
                         //...
                         //reuse glTF metadata parser
 
-                        function _createMetadataString( name, value )
+                        function _createMetadataString ( name, value )
                         {
-                            let metadata = document.createElement( 'MetadataString' );
+                            const metadata = document.createElement( "MetadataString" );
                             metadata.setAttribute( "name", name );
                             metadata.setAttribute( "value", value );
                             return metadata;
@@ -153,14 +153,14 @@ x3dom.registerNodeType(
 
                         // GeoOrigin
                         // pass on, but better to set this._trafo here
-                        let geoOrigin = that._cf.geoOrigin.node;
+                        const geoOrigin = that._cf.geoOrigin.node;
                         if ( geoOrigin )
                         {
-                            let geoOriginClone = geoOrigin._xmlNode.cloneNode();
+                            const geoOriginClone = geoOrigin._xmlNode.cloneNode();
                             geoOriginClone.setAttribute( "containerField", "geoOrigin" );
                             tilesetDOM.appendChild( geoOriginClone );
                         }
-                        
+
                         // root
                         // if GeoTileset is given json it constructs its own root tile node from it
 
@@ -169,7 +169,7 @@ x3dom.registerNodeType(
                     },
                     function rejected ( reason )
                     {
-                        x3dom.debug.logInfo ( ' Tileset rejected: ' + reason );
+                        x3dom.debug.logInfo( " Tileset rejected: " + reason );
                         // try next url
                     }
                 );

@@ -893,7 +893,7 @@ x3dom.Viewarea.prototype.showAll = function ( axis, updateCenterOfRotation )
 
     var min = x3dom.fields.SFVec3f.copy( scene._lastMin );
     var max = x3dom.fields.SFVec3f.copy( scene._lastMax );
-    
+
     var dia = max.subtract( min );
     var dia2 = dia.multiply( 0.5 );
     var center = min.add( dia2 );
@@ -936,7 +936,6 @@ x3dom.Viewarea.prototype.showAll = function ( axis, updateCenterOfRotation )
 
     var isOrtho = x3dom.isa( viewpoint, x3dom.nodeTypes.OrthoViewpoint );
 
-    
     if ( updateCenterOfRotation )
     {
         viewpoint.setCenterOfRotation( center );

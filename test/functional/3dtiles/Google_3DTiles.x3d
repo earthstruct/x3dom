@@ -2,6 +2,7 @@
 <!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
 <X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.0.xsd'>
 	<Scene>
+            <NavigationInfo speed='0.5' />
             <GeoViewpoint speedFactor='0.1' headlight="true" 
                 orientation='1 0 0 -1.57'
                 centerOfRotation="50 -120 -6371000"
@@ -10,8 +11,8 @@
                 <!-- </GeoOrigin> -->
             </GeoViewpoint>
             <DirectionalLight direction="0, -1, 1" intensity="5"></DirectionalLight>
-        <!-- <Transform _rotation='1 0 0 1.5708'>     -->
-		    <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyBMcau8Z4U50eULAjWSmPUyz6P2_mDgGKQ"'>
+            <!-- my revenc key from Cesium ION: RG1fMlA2enlVUG1TV2pBTFVlMDVVNFo4dWFjTUJ5U2F6SUEK -->
+            <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json?key=YOURKEY"'>
                 <!-- <GeoOrigin USE='GO' /> -->
             </GeoOGC3DTiles>
         <!-- </Transform> -->
