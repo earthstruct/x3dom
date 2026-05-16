@@ -11,8 +11,8 @@
                 <!-- </GeoOrigin> -->
             </GeoViewpoint>
             <DirectionalLight direction="0, -1, 1" intensity="5"></DirectionalLight>
-            <!-- my revenc key from Cesium ION: RG1fMlA2enlVUG1TV2pBTFVlMDVVNFo4dWFjTUJ5U2F6SUEK -->
-            <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json?key=YOURKEY"'>
+            <!-- my revenc key from Cesium ION:  UUtHZ0RtXzJQNnp5VVBtU1dqQUxVZTA1VTRaOHVhY01CeVNheklBCg==  -->
+            <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json?key=yourkey"'>
                 <!-- <GeoOrigin USE='GO' /> -->
             </GeoOGC3DTiles>
         <!-- </Transform> -->

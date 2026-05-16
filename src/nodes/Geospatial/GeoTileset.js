@@ -75,11 +75,12 @@ x3dom.registerNodeType(
 
             this._loaded = new Map();
             this._inlined = new Set();
+            this._unselectedTiles = new Set();
             this._initialUpdate = true;
             this._maximumScreenSpaceError = this._vf.maximumScreenSpaceError;
             this._fovBuffer = 0; // for conservative culling
             this._lastTileUpdate = -1;
-            this._updatePeriod = 3000; // updates only every milliseconds
+            this._updatePeriod = 300; // updates only every milliseconds
 
             this._load = x3dom.loaders.core.load;
             this._Tiles3DLoader = x3dom.loaders[ "3d-tiles" ].Tiles3DLoader;
@@ -103,7 +104,13 @@ x3dom.registerNodeType(
                     this._initialUpdate = false;
                     return;
                 }
-                const rt = this._nameSpace.doc._x3dElem.runtime;
+                const doc = this._nameSpace.doc;
+                if ( doc.downloadCount < 2 )
+                {
+                    this._unselectedTiles.forEach( ( tile ) => this._setTileVisible( tile, false ) );
+                    //removedTiles.forEach( this._onTileUnload, this );
+                }
+                const rt = doc._x3dElem.runtime;
                 if ( rt.canvas.doc.isAnimating() )
                 {
                     console.log( "animating" );
@@ -173,6 +180,7 @@ x3dom.registerNodeType(
                 rt.addMeasurement( "bearing", bearing );
                 rt.addMeasurement( "zoom", zoom );
                 rt.addInfo( "#TILES", this.tileset3d.selectedTiles.length );
+                rt.addInfo( "#TSETKB", Math.round( this.tileset3d.gpuMemoryUsageInBytes * 0.001 ) );
                 //console.log ( zoom );
                 const viewportOpts = {
                     width     : width * 1.0,
@@ -256,7 +264,7 @@ x3dom.registerNodeType(
                                 __onTileLoad                   : that._updateX3DTiles.bind( that ),
                                 onTileUnload                   : that._onTileUnload.bind( that ),
                                 onTraversalComplete            : that._onTraversalComplete.bind( that ),
-                                maximumMemoryUsage             : 32, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
+                                maximumMemoryUsage             : 256, // 32 MBytes, The maximum amount of memory in MB that can be used by the tileset.
                                 updateTransforms               : false, // true (Boolean) - Always check if the tileset modelMatrix was updated. Set to false to improve performance when the tileset remains stationary in the scene.
                                 maximumScreenSpaceError        : that._maximumScreenSpaceError, // 8 (Number) - The maximum screen space error used to drive level of detail refinement.
                                 memoryAdjustedScreenSpaceError : true // false - Whether to adjust the maximum screen space error to comply with the maximum memory limitation
@@ -318,16 +326,13 @@ x3dom.registerNodeType(
                 //
                 //console.log( "afterTraversal:", selectedTiles );
                 if ( Date.now() - this._lastTileUpdate < this._updatePeriod ) { return selectedTiles; }
+                this._lastTileUpdate = Date.now();
                 const selected = new Set( selectedTiles );//.map( t => t.id ));
                 const missingTiles = selected.difference( this._inlined );
                 const removedTiles = this._inlined.difference( selected );
+                this._unselectedTiles = removedTiles;
                 //missingTiles.forEach( this._onTileLoad, this );
                 //only hide after parent is visible and loaded, or all children are loaded and visible
-                if ( this._nameSpace.doc.downloadCount < 2 )
-                {
-                    removedTiles.forEach( ( tile ) => this._setTileVisible( tile, false ) );
-                    //removedTiles.forEach( this._onTileUnload, this );
-                }
                 //this._inlined = selected;
                 //this._inlined = selected;
                 //missingTiles.forEach( ( tile ) => this._setTileVisible( tile, true ) );
@@ -335,43 +340,60 @@ x3dom.registerNodeType(
                 //console.log( 'missing:', missingTiles );
                 //console.log( 'removed:', removedTiles );
                 this._geoOriginTransform.nodeChanged();
-                this._lastTileUpdate = Date.now();
                 return selectedTiles; //required
             },
 
             _setTileVisible : function ( tile, visible )
             {
+                visible = !!visible;
                 const x3d_tileTransform = this._loaded.get( tile );
-                x3d_tileTransform._vf.visible = !!visible;
-                //x3d_tileTransform.fieldChanged( 'render');
+                if ( !x3d_tileTransform ) return;
+                if ( x3d_tileTransform._vf.visible == visible ) 
+                {
+                    return;
+                }
+                tile.tileDrawn = visible;
+                x3d_tileTransform._vf.visible = visible;
+                x3d_tileTransform.fieldChanged( 'render' );
                 console.log( "tile", visible, tile );
             },
 
             _onTileUnload : function ( tile )
             {
                 //called when loader decides there is not enough memory and tiles need to be disposed
-                console.log( "unloaded:", tile.screenSpaceError, tile.id );
-                const x3d_tileTransform = this._loaded.get( tile );
-                setTimeout( () => // should wait until after all tiles loaded from current traveral
-                {
-                    console.log( "removing Inline: ", x3d_tileTransform );
-                    this._geoOriginTransform.removeChild( x3d_tileTransform );
-                    if ( "objectUrl" in tile )
-                    {
-                        URL.revokeObjectURL( tile.objectUrl );
-                    }
-                    //this._geoOriginTransform.nodeChanged();
-                    this._geoOriginTransform.invalidateVolume();
-                }, 5000 );
-                this._loaded.delete( tile );
-                return tile;
+                // this._unselectedTiles.forEach ( ( tile ) =>
+                // {
+                    console.log( "unloaded:", tile.screenSpaceError, tile.id );
+                    const x3d_tileTransform = this._loaded.get( tile );
+                    //setTimeout( () => // should wait until after all tiles loaded from current traveral
+                    //{
+                        console.log( "removing Inline: ", x3d_tileTransform );
+                        this._geoOriginTransform.removeChild( x3d_tileTransform );
+                        if ( "objectUrl" in tile )
+                        {
+                            URL.revokeObjectURL( tile.objectUrl );
+                        }
+                        //this._geoOriginTransform.nodeChanged();
+                        this._geoOriginTransform.invalidateVolume();
+                    //}, 0 );
+                    this._loaded.delete( tile );
+                    this._inlined.delete( tile );
+                    this._unselectedTiles.delete( tile );
+                    tile.tileset.gpuMemoryUsageInBytes -= tile.gpuMemoryUsageInBytes;
+                    //tile.destroy();
+                // } );
+                return;
             },
 
             _onTileLoad : function ( tile )
             {
                 //called when a not already loaded tile needs to be created and shown
                 console.log( tile.screenSpaceError, tile );
-                //tile.lodMetricValue = Math.max(tile.lodMetricValue, 10);
+                if ( this._inlined.has( tile ) )
+                {
+                    console.log (' tile already loaded and added: should not happen ', tile);
+                    return
+                }
                 if ( tile.hasTilesetContent ) // needs another update to continue to traverse
                 {
                     tile.tileset.selectTiles( this.viewport ); // kicks off next onTileLoad call
@@ -437,6 +459,8 @@ x3dom.registerNodeType(
                 {
                     contentUrl = x3dom.Utils.arrayBufferToObjectURL( arrayBuffer, "model/gltf-binary" );
                     tile.objectURL = contentUrl; //attach to tile for easy revoking
+                    tile.gpuMemoryUsageInBytes = arrayBuffer.byteLength; //estimate
+                    tile.tileset.gpuMemoryUsageInBytes += arrayBuffer.byteLength; //basic accounting
                 }
                 return contentUrl;
             },
