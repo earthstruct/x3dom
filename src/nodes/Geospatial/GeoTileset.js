@@ -88,7 +88,7 @@ x3dom.registerNodeType(
             this._Viewport = x3dom.deck.core.Viewport;
             this._WebMercatorViewport = x3dom.deck.core.WebMercatorViewport;//x3dom.deck.core.WebMercatorViewport;
             this._GlobeViewport = x3dom.deck.core._GlobeViewport;
-            this._GlobeMaxZoom = 4;
+            this._GlobeMaxZoom = 3;
 
             this._geoOriginTransform = new x3dom.nodeTypes.GeoTransform( this._ctx );
             this._geoOriginTransform._cf.geoOrigin = this._cf.geoOrigin;
@@ -180,7 +180,7 @@ x3dom.registerNodeType(
                 rt.addMeasurement( "bearing", bearing );
                 rt.addMeasurement( "zoom", zoom );
                 rt.addInfo( "#TILES", this.tileset3d.selectedTiles.length );
-                rt.addInfo( "#TSETKB", Math.round( this.tileset3d.gpuMemoryUsageInBytes * 0.001 ) );
+                rt.addInfo( "#KB_TSET", Math.round( this.tileset3d.gpuMemoryUsageInBytes * 0.001 ) );
                 //console.log ( zoom );
                 const viewportOpts = {
                     width     : width * 1.0,
@@ -197,12 +197,12 @@ x3dom.registerNodeType(
                 {
                     viewport_unchanged &&= viewportOpts[ p ] == this.viewport[ p ];
                 }
-                if ( viewport_unchanged )
+                if ( !viewport_unchanged )
                 {
-                    console.log( "viewport unchanged, skipping update" );
+                    console.log( "viewport changed, waiting for calm" );
+                    this.viewport = zoom > this._GlobeMaxZoom ? new this._WebMercatorViewport( viewportOpts ) : new this._GlobeViewport( viewportOpts );
                     return;
                 }
-                this.viewport = zoom > this._GlobeMaxZoom ? new this._WebMercatorViewport( viewportOpts ) : new this._GlobeViewport( viewportOpts );
                 //this.tileset3d.update ( this.viewport );
                 //console.log(this.tileset3d.selectedTiles);
                 return this.tileset3d.selectTiles( this.viewport ); //select tiles seems to time better
@@ -256,6 +256,11 @@ x3dom.registerNodeType(
                 tilesetJsonPromise.then(
                     function fullfilled ( tilesetJson )
                     {
+                        //patch asset property
+                        if ( ! ( "asset" in tilesetJson ) )
+                        {
+                            tilesetJson.asset = { "version" : "1.1" };
+                        }
                         console.log( tilesetJson );
                         const tileset3d = new that._Tileset3D( tilesetJson,
                             {
@@ -415,6 +420,7 @@ x3dom.registerNodeType(
 
                 tileCtx.xmlNode = document.createElement( "Inline" );
                 const glTFInline = new x3dom.nodeTypes.Inline( tileCtx );
+                glTFInline._vf.log = false; //no logging
                 const contentUrl = this.contentUrl( tile );
                 glTFInline._vf.url = x3dom.fields.MFString.parse( contentUrl );
                 if ( contentUrl.startsWith( "blob:" ) )

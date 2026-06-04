@@ -6,13 +6,13 @@
             <GeoViewpoint speedFactor='0.1' headlight="true" 
                 orientation='1 0 0 -1.57'
                 centerOfRotation="50 -120 -6371000"
-                position="50 -120 180000">
+                position="50 -120 680000">
                 <!-- <GeoOrigin DEF='GO' geoCoords="-6.5976 -78.0015 0" rotateYUp="true"> -->
                 <!-- </GeoOrigin> -->
             </GeoViewpoint>
             <DirectionalLight direction="0, -1, 1" intensity="5"></DirectionalLight>
             <!-- my revenc key from Cesium ION:  UUtHZ0RtXzJQNnp5VVBtU1dqQUxVZTA1VTRaOHVhY01CeVNheklBCg==  -->
-            <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json?key=yourkey"'>
+            <GeoOGC3DTiles url='"https://tile.googleapis.com/v1/3dtiles/root.json"' >
                 <!-- <GeoOrigin USE='GO' /> -->
             </GeoOGC3DTiles>
         <!-- </Transform> -->

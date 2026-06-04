@@ -124,6 +124,8 @@ x3dom.registerNodeType(
                         console.log( tilesetJson );
                         that._loaded.set( that._vf.url[ 0 ], "loaded" );
 
+                        that._xmlNode.querySelector('GeoTileset')?.remove();
+                    
                         const tilesetDOM = document.createElement( "GeoTileset" );
                         tilesetDOM.setAttribute( "containerField", "tileset" );
                         tilesetDOM.setAttribute( "geometricError", tilesetJson.geometricError );
@@ -177,20 +179,16 @@ x3dom.registerNodeType(
                 //this.invalidateVolume();
             },
 
-            _fieldChanged : function ( fieldName )
+            fieldChanged : function ( fieldName )
             {
                 //this._needReRender = true;
-                if ( fieldName == "render" || fieldName == "range" )
+                if ( fieldName == "render" )
                 {
                     this.invalidateVolume();
                 }
-                if ( fieldname == "center" )
+                if ( fieldName == "url" )
                 {
-                    var coords = new x3dom.fields.MFVec3f();
-                    coords.push( this._vf.center );
-                    this._x3dcenter = x3dom.nodeTypes.GeoCoordinate.prototype.GEOtoX3D( this._vf.geoSystem, this._cf.geoOrigin, coords )[ 0 ];
-
-                    this.invalidateVolume();
+                    this.nodeChanged();
                 }
             }
         }

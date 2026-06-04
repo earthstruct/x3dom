@@ -51,6 +51,16 @@ x3dom.registerNodeType(
             this.addField_SFBool( ctx, "load", true );
 
             /**
+             * Specifies whether to log activity in console.
+             * @var {x3dom.fields.SFBool} log
+             * @memberof x3dom.nodeTypes.Inline
+             * @initvalue true
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFBool( ctx, "log", true );
+
+            /**
              * The description field specifies a textual description.
              * This may be used by browser-specific user interfaces that wish to present users with more detailed information.
              * @var {x3dom.fields.SFString} description
@@ -321,7 +331,7 @@ x3dom.registerNodeType(
                             that._nameSpace.doc.needRender = true;
                             that._nameSpace.doc.decrementDownloads();
                             that._nameSpace.doc.needRender = true;
-                            x3dom.debug.logInfo( "Inline: added " + that._vf.url[ that.urlIndex ] + " to scene." );
+                            x3dom.debug.logInfo( "Inline: added " + that._vf.url[ that.urlIndex ] + " to scene.", that._vf.log );
                         }, 1000 );
                     }
                     that._nameSpace.importNodes( newScene._nameSpace );
@@ -378,7 +388,7 @@ x3dom.registerNodeType(
                         }
                         else if ( xhr.status == 200 || xhr.status == 0 )
                         {
-                            x3dom.debug.logInfo( "Inline: downloading " + that._vf.url[ that.urlIndex ] + " done." );
+                            x3dom.debug.logInfo( "Inline: downloading " + that._vf.url[ that.urlIndex ] + " done.", that._vf.log );
 
                             if ( contentType == undefined )
                             {
@@ -536,11 +546,11 @@ x3dom.registerNodeType(
 
                 if ( ( url[ 0 ] === "/" ) || ( url.indexOf( ":" ) >= 0 ) )
                 {
-                    nameSpace.setBaseURL( url );
+                    nameSpace.setBaseURL( url, { log : this._vf.log } );
                 }
                 else
                 {
-                    nameSpace.setBaseURL( this._nameSpace.baseURL + url );
+                    nameSpace.setBaseURL( this._nameSpace.baseURL + url, { log : this._vf.log } );
                 }
 
                 this._nameSpace.addSpace( nameSpace );

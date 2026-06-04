@@ -65,7 +65,7 @@
             _border-radius: 5px;'
             id="x3d-select" onchange='handleChange(event)'>
         <option>glbContentInline</option>
-        <option disabled >Google_3DTiles</option>
+        <option _disabled skipShowAll needsKey>Google_3DTiles</option>
         <option selected >GeoTileset_Tileset</option>
         <option>GeoTileset_withTransforms</option>
         <option>GeoTileset_emptyRoot</option>
@@ -83,19 +83,47 @@
         <option>PlanetLabs_SP_Crater_globalGC</option>
         <option>Bertt_3dcitydb_Ingolstadt</option>
         <option>Bertt_Octree_Lyon</option>
+        <option>Geodan_Sibbe</option>
+        <option skipShowAll needsKey>Geodan_Sibbe_Google3D</option>
+        <option>Bertt_Delaware</option>
         <option disabled >GeoTileset_multipleContents</option>
         <option value="none" >--Please choose a x3d scene--</option>
     </select>
+    <label>Google Key:
+        <input id="googleKey" type="'text" size="40" value="BIzaSyBMcau8Z4U50eULAjWSmPUyz6P2_mDgGKQ first B to A" >
+    </label>
 </body>
 <script>
     const inline = document.querySelector('#Inline');
     const ext = '.x3d';
+    const selectEl = document.querySelector('#x3d-select');
+    const skipShowAll = 'skipShowAll';
+    const needsKeyName = 'needsKey';
+    const googleKeyEl = document.querySelector('#googleKey');
     function handleChange(event) {
         let option = event.target.options[event.target.selectedIndex].value;
         inline.setAttribute('url', option + ext);
     }
     function handleLoad(event) {
-        setTimeout(()=>{document.querySelector('X3D').runtime.showAll("negY");}, 3000);
+        const googleKey = googleKeyEl.value;
+        const selectedAttributes = selectEl.options[selectEl.selectedIndex].attributes
+        const needsKey = selectedAttributes[needsKeyName];
+        const skip = selectedAttributes[skipShowAll];
+        setTimeout( () => {
+            const googleTileEl = inline.querySelector('GeoOGC3DTiles[url*="googleapis"]');
+            if ( googleTileEl )
+                {
+                    const googleURL = googleTileEl.getAttribute('url');
+                    if ( ! googleURL.includes('key') )
+                    {
+                        googleTileEl.setAttribute('url', googleURL.replace('root.json', 'root.json?key=' + googleKey));
+                    }
+                }
+        }, 100 );
+        setTimeout( () => {
+            if ( skip ) { return }
+            document.querySelector('X3D').runtime.showAll("negY");
+        }, 3000 );
     }
 </script>
 </html>

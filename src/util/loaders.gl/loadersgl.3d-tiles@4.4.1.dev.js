@@ -19317,7 +19317,7 @@ var __exports__ = (() => {
     }
     const localLevel = parentData.localLevel + 1;
     const level = subtreeData.level + localLevel;
-    if (level > maximumLevel) {
+    if (level > maximumLevel + 1) { //AP patch 6/2026
       return tile;
     }
     const childrenPerTile = SUBDIVISION_COUNT_MAP[subdivisionScheme];
