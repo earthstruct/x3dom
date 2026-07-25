@@ -4,9 +4,11 @@
 	<Scene>
         <GeoTransform globalGeoOrigin="true">
             <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0" rotateYUp="true" />
-            <Transform rotation='1 0 0 1.5708'>    
-                <Inline url='"https://andreasplesch.github.io/3d-tiles-examples/migration/output_from_1.0/Tilesets/Tileset/parent.glb"' />
-            </Transform>
+            <MatrixTransform>
+                <Transform rotation='1 0 0 1.5708'>
+                    <Inline url='"https://andreasplesch.github.io/3d-tiles-examples/migration/output_from_1.0/Tilesets/Tileset/parent.glb"' />
+                </Transform>
+            </MatrixTransform>
         </GeoTransform>
     </Scene>
 </X3D>

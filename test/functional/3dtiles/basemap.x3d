@@ -17,9 +17,16 @@
                 zDimension='2' zSpacing='0.025897'
                 yScale='1'>
                 <GeoOrigin DEF='GO' geoCoords="40.029 -75.6148 0" rotateYUp="true"/>
-
             </GeoElevationGrid>
         </Shape> 
+        <GeoLocation geoCoords="40.029 -75.6148 0">
+            <GeoOrigin USE='GO'/>
+            <Transform scale='100 100 100' translation='0 200 -2000'>
+                <Transform translation='0 0 -5'>
+                    <Inline url='"https://www.web3d.org/x3d/content/examples/Basic/Web3dOutreach/Web3dX3dLogoAnimated.x3d"'></Inline>
+                </Transform>
+            </Transform>
+        </GeoLocation>  
     </Scene>
 </X3D>
 
