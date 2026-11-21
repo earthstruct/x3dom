@@ -199,7 +199,7 @@ x3dom.registerNodeType(
                 }
                 if ( !viewport_unchanged )
                 {
-                    console.log( "viewport changed, waiting for calm" );
+                    console.log( "viewport changed, waiting for calm, current zoom: ", zoom );
                     this.viewport = zoom > this._GlobeMaxZoom ? new this._WebMercatorViewport( viewportOpts ) : new this._GlobeViewport( viewportOpts );
                     return;
                 }

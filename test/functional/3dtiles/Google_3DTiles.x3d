@@ -3,14 +3,14 @@
 <X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.0.xsd'>
 	<Scene>
             <NavigationInfo speed='0.2' />
-            <!-- <GeoViewpoint speedFactor='0.1' headlight="true" 
+            <!-- <GeoViewpoint speedFactor='0.1'   
                 orientation='1 0 0 -1.57'
                 centerOfRotation="37.7944 -122.4519 000"
                 position="37.7944 -122.4519 80000">
                 <GeoOrigin DEF='GO' geoCoords="25.31690 51.446603 000" rotateYUp="true">
                 </GeoOrigin>
             </GeoViewpoint> -->
-            <GeoViewpoint speedFactor='0.1' headlight="true" zNear='10'
+            <GeoViewpoint speedFactor='0.1'   zNear='10'
                 orientation='1 0 0 -1.57'
                 centerOfRotation="25.31690 51.446603 000"
                 position="25.31690 51.446603 40000">

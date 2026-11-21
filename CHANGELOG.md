@@ -31,6 +31,7 @@
   * more accurate startTime update
   * tune PhysicalMaterial for compatible light intensity
 * Bugfixes
+  * fix Geoviewpoint legacy headlight
   * fix Rectangle2D size updates
   * fix fitAll for OrthoViewpoint
   * fix nav. type field updates

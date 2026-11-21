@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>GeoViewpoint: lit mesh shows no relief</title>
+    <script type="text/javascript" src="../../x3dom-include.js?full"></script>
+<link rel='stylesheet' href='x3dom.css'>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+  x3d { display: block; width: 100vw !important; height: 100vh !important; }
+  #panel { position: absolute; top: 6px; left: 6px; z-index: 10; background: rgba(255,255,255,.88); padding: 6px 10px; font: 13px sans-serif; }
+  #panel button { margin: 2px 2px 2px 0; }
+</style>
+</head>
+<body>
+<div id='panel'>
+  <div><b id='which'></b> &nbsp; <a href='?model=glb'>glb</a> | <a href='?model=ifs'>ifs</a> | <a href='?model=glb&light=1'>glb + light</a> | <a href='?model=ifs&light=1'>ifs + light</a></div>
+  <div>Viewpoint (model coordinates):
+    <button onclick="bind('DOWN_LOCAL')">down</button><button onclick="bind('OBLIQUE_LOCAL')">oblique</button></div>
+  <div>GeoViewpoint (with GeoOrigin):
+    <button onclick="bind('DOWN_GEO')">down</button><button onclick="bind('OBLIQUE_GEO')">oblique</button></div>
+</div>
+<x3d id='x3dElement' showStat='false' showLog='false'>
+  <scene>
+    <navigationInfo type='"EXAMINE" "ANY"' headlight='true'></navigationInfo>
+    <background skyColor='0.7 0.8 0.9'></background>
+    <GeoViewpoint _headlight='true' DEF='DOWN_GEO' id='DOWN_GEO' description='Down, GeoViewpoint' geoSystem='"GD" "WE"' position='36.637514 -122.399356 260.0' orientation='1.0 0.0 0.0 -1.570796' fieldOfView='0.785398'>
+          <GeoOrigin DEF='ORIGIN' geoSystem='"GD" "WE"' geoCoords='36.637514 -122.399356 0.0'></GeoOrigin>
+        </GeoViewpoint>
+    <GeoViewpoint _headlight='true' DEF='OBLIQUE_GEO' id='OBLIQUE_GEO' description='Oblique, GeoViewpoint' geoSystem='"GD" "WE"' position='36.63553201801802 -122.399356 220.0' orientation='-1.0 0.0 0.0 0.785398' fieldOfView='0.785398'>
+          <GeoOrigin USE='ORIGIN'></GeoOrigin>
+        </GeoViewpoint>
+        <Viewpoint DEF='DOWN_LOCAL' id='DOWN_LOCAL' description='Down, Viewpoint (model coordinates)' position='-111.788 -176.154 155.155' orientation='0.839592 -0.243919 -0.485375 1.078705' fieldOfView='0.785398'></Viewpoint>
+    <Viewpoint DEF='OBLIQUE_LOCAL' id='OBLIQUE_LOCAL' description='Oblique, Viewpoint (model coordinates)' position='-164.935 -259.902 -45.249' orientation='0.933572 -0.271222 -0.234268 1.784365' fieldOfView='0.785398'></Viewpoint>
+    
+    <group id='model'></group>
+  </scene>
+</x3d>
+<script>
+  // The GeoOrigin is declared once, as a child of the first GeoViewpoint, and used again by the others; the vertices of the model are
+  // relative to it (ECEF meters minus its ECEF position).
+  function bind(id) { document.getElementById(id).setAttribute('set_bind', 'true'); }
+  var model = new URLSearchParams(location.search).get('model') || 'ifs';
+  document.getElementById('which').textContent = 'model: ' + (model === 'ifs' ? 'IndexedFaceSet + Normal' : 'glTF with NORMAL') + (new URLSearchParams(location.search).get('light') ? ', explicit DirectionalLight (headlight off)' : ', headlight');
+  var inline = document.createElement('Inline');
+  inline.setAttribute('url', model === 'ifs' ? 'terrain_ifs.x3d' : 'terrain.glb');
+  document.getElementById('model').appendChild(inline);
+  // ?light=1: switch the headlight off and use one DirectionalLight (direction in model axes: down, toward the north-east)
+  if (new URLSearchParams(location.search).get('light')) {
+    document.querySelector('navigationInfo').setAttribute('headlight', 'false');
+    var light = document.createElement('DirectionalLight');
+    light.setAttribute('direction', '0.80217 0.59486 0.05159');
+    light.setAttribute('intensity', '1');
+    document.querySelector('scene').appendChild(light);
+  }
+  var start = new URLSearchParams(location.search).get('view');
+  // if (start) { window.addEventListener('load', function () { setTimeout(function () { bind(start); }, 1500); }); }
+</script>
+</body>
+</html>
+

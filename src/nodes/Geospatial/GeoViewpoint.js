@@ -89,14 +89,14 @@ x3dom.registerNodeType(
             /**
              * Enable/disable directional light that always points in the direction the user is looking.
              * Removed in X3D V3.3. See NavigationInfo
-             * still supported but required changing default to undefined since could be already given by NavigationInfo
-             * @var {x3dom.fields.SFBool} headlight
+             * still supported but required changing default to SFString since could be already given by NavigationInfo
+             * @var {x3dom.fields.SFString} headlight
              * @memberof x3dom.nodeTypes.GeoViewpoint
-             * @initvalue undefined
+             * @initvalue NavigationInfo
              * @field x3dom
              * @instance
              */
-            this.addField_SFBool( ctx, "headlight", undefined );
+            this.addField_SFString( ctx, "headlight", "NavigationInfo" );
 
             /**
              * Specifies the navigation type.
@@ -108,7 +108,7 @@ x3dom.registerNodeType(
              * @field x3dom
              * @instance
              */
-            this.addField_MFString( ctx, "navType", undefined );
+            this.addField_MFString( ctx, "navType", [] );
 
             /**
              * The speedFactor field of the GeoViewpoint node is used as a multiplier to the elevation-based velocity that the node sets internally; i.e., this is a relative value and not an absolute speed as is the case for the NavigationInfo node.
@@ -193,8 +193,8 @@ x3dom.registerNodeType(
                 // x3dom.debug.logInfo(this._xmlNode.hasAttribute('headlight'));
                 // set headlight and navType here if they are given (but removed from spec.)
                 // is there a way to check if fields are given in the document ? (dom has default values if not given)
-                if ( this._vf.headlight !== undefined ) {navi._vf.headlight = this._vf.headlight;}
-                if ( this._vf.navType !== undefined ) {navi._vf.navType = this._vf.navType;}
+                if ( this._vf.headlight !== "NavigationInfo" ) {navi._vf.headlight = this._vf.headlight == "true";}
+                if ( this._vf.navType.length ) {navi._vf.navType = this._vf.navType;}
             },
 
             // redefine deactivate to restore initial speed
